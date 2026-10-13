@@ -1,0 +1,22 @@
+{
+  "name": "ai-datacenter-colocation-cost-calculator",
+  "version": "1.0.0",
+  "description": "Malaysia NVIDIA B300 AI Compute Colocation Investment & Cost Calculator (Material Design)",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 3000",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "datacenter",
+    "colocation",
+    "cost-calculator",
+    "nvidia-b300",
+    "malaysia-datacenter",
+    "capex",
+    "opex",
+    "financial-model"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}

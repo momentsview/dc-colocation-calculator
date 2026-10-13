@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Data Center Colocation Cost Calculator | NVIDIA B300 Malaysia</title>
+  <meta name="description" content="Interactive Feasibility & Colocation Cost Calculator for 1,024 NVIDIA B300 AI Compute Servers in Malaysia (Johor, Cyberjaya, KL).">
+  <!-- Material 3 & Modern Styling -->
+  <link rel="stylesheet" href="styles.css?v=20261014_v1">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Material App Bar -->
+  <header class="top-app-bar">
+    <div class="top-app-bar-inner">
+      <div class="brand-section">
+        <div class="brand-logo-icon" aria-hidden="true">
+          <!-- Server & GPU Chip Icon -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>AI DC Colocation Cost Calculator</h1>
+          <p>
+            <span>Malaysia NVIDIA B300 Compute Feasibility</span>
+            <span class="badge-tag">Model A: Colocation</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Unified Currency & FX Dropdown Button -->
+        <button type="button" id="btnMobileCurrency" class="btn btn-tonal currency-dropdown-btn" title="Tap to select currency or change FX exchange rates">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+            <path d="M12 6v12"></path>
+          </svg>
+          <span id="mobileCurrencyText">USD ($)</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        <!-- Quick Action Buttons -->
+        <div class="header-quick-actions">
+          <!-- Dark/Light Mode -->
+          <button id="themeToggle" class="btn btn-tonal btn-icon-only" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <!-- Reset Button -->
+          <button id="btnReset" class="btn btn-primary" title="Reset all inputs to Base defaults" aria-label="Reset Model">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <polyline points="23 20 23 14 17 14"></polyline>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+            </svg>
+            <span class="btn-label-text">Reset</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-container" id="appContainer" data-active-tab="summary">
+
+    <!-- Scenario Presets Bar -->
+    <div class="scenario-selector-bar" id="scenarioSelectorBar">
+      <!-- Desktop View: Horizontal Chips -->
+      <div class="desktop-scenario-view">
+        <div class="scenario-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          Scenario Presets:
+        </div>
+        <div class="scenario-chips-group" id="scenarioChipsGroup">
+          <button class="scenario-chip" data-scenario="severe" title="Severe: 1,024 servers @ $650,000, $4.25/GPU-hr">
+            <span class="dot"></span> <span class="chip-text">Severe ($650k @ 1,024 servers)</span>
+          </button>
+          <button class="scenario-chip" data-scenario="bear" title="Bear: 1,024 servers @ $625,000, $5.00/GPU-hr">
+            <span class="dot"></span> <span class="chip-text">Bear ($625k @ 1,024 servers)</span>
+          </button>
+          <button class="scenario-chip active" data-scenario="base" title="Base: 1,024 servers @ $550,000, $6.50/GPU-hr">
+            <span class="dot"></span> <span class="chip-text">Base ($550k @ 1,024 servers)</span>
+          </button>
+          <button class="scenario-chip" data-scenario="bull" title="Bull: 1,024 servers @ $475,000, $8.00/GPU-hr">
+            <span class="dot"></span> <span class="chip-text">Bull ($475k @ 1,024 servers)</span>
+          </button>
+          <button class="scenario-chip" data-scenario="custom" id="customChip" title="Custom Values: Your personalized configuration">
+            <span class="dot"></span> <span class="chip-text" id="customChipLabel">Custom Values</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile View: Ultra-Simplified Single Trigger Card + Dropdown Menu -->
+      <div class="mobile-scenario-view">
+        <div class="mobile-scenario-header" id="mobileScenarioHeader">
+          <div class="scenario-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            Scenario Preset:
+          </div>
+          <span class="mobile-scenario-hint" id="mobileScenarioHint">Tap to change ▾</span>
+        </div>
+
+        <!-- Single Selected Scenario Card / Trigger -->
+        <button type="button" class="mobile-scenario-trigger" id="mobileScenarioTrigger" aria-haspopup="true" aria-expanded="false">
+          <div class="trigger-left">
+            <span class="dot" id="mobileTriggerDot" style="background-color: #2563eb;"></span>
+            <span class="trigger-title" id="mobileTriggerText">Base ($550k @ 1,024 servers)</span>
+          </div>
+          <div class="trigger-right">
+            <svg class="trigger-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Dropdown Choices List (Hidden until tapped) -->
+        <div class="mobile-scenario-dropdown" id="mobileScenarioDropdown" style="display: none;">
+          <div class="dropdown-heading">Select a Planning Scenario:</div>
+          <button type="button" class="mobile-option-item" data-scenario-select="severe">
+            <span class="dot" style="background-color: #dc2626;"></span>
+            <span class="option-label">Severe ($650k @ 1,024 servers)</span>
+            <span class="check-icon">✓</span>
+          </button>
+          <button type="button" class="mobile-option-item" data-scenario-select="bear">
+            <span class="dot" style="background-color: #d97706;"></span>
+            <span class="option-label">Bear ($625k @ 1,024 servers)</span>
+            <span class="check-icon">✓</span>
+          </button>
+          <button type="button" class="mobile-option-item active" data-scenario-select="base">
+            <span class="dot" style="background-color: #2563eb;"></span>
+            <span class="option-label">Base ($550k @ 1,024 servers)</span>
+            <span class="check-icon">✓</span>
+          </button>
+          <button type="button" class="mobile-option-item" data-scenario-select="bull">
+            <span class="dot" style="background-color: #059669;"></span>
+            <span class="option-label">Bull ($475k @ 1,024 servers)</span>
+            <span class="check-icon">✓</span>
+          </button>
+          <button type="button" class="mobile-option-item" data-scenario-select="custom">
+            <span class="dot" style="background-color: #7c3aed;"></span>
+            <span class="option-label" id="mobileCustomOptionLabel">Custom Values</span>
+            <span class="check-icon">✓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario Feedback & Guidance Banner -->
+    <div id="scenarioFeedback" class="scenario-feedback-banner" style="display: none;">
+      <div class="feedback-icon" id="feedbackIcon"></div>
+      <div class="feedback-text" id="feedbackText"></div>
+      <button type="button" class="feedback-close-btn" id="feedbackClose" aria-label="Dismiss feedback">✕</button>
+    </div>
+
+    <!-- Executive KPI Scorecard Grid -->
+    <section class="kpi-grid">
+      <!-- 1. Upfront Funding -->
+      <div class="kpi-card" style="--card-accent: #2563eb; --icon-bg: #dbeafe; --icon-color: #1e40af;">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Upfront Capital</span>
+          <div class="kpi-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiUpfront">$758.8M</div>
+        <div class="kpi-subtext" id="kpiUpfrontSub">Servers: $571.6M + Infra: $153.9M</div>
+      </div>
+
+      <!-- 2. Annual Gross Revenue -->
+      <div class="kpi-card" style="--card-accent: #0284c7; --icon-bg: #e0f2fe; --icon-color: #0369a1;">
+        <div class="kpi-header">
+          <span class="kpi-label">Year-1 Gross Revenue</span>
+          <div class="kpi-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiRevenue">$516.7M</div>
+        <div class="kpi-subtext" id="kpiRevenueSub">$43.1M / mo (80% util)</div>
+      </div>
+
+      <!-- 3. Annual OPEX -->
+      <div class="kpi-card" style="--card-accent: #0f766e; --icon-bg: #ccfbf1; --icon-color: #0f766e;">
+        <div class="kpi-header">
+          <span class="kpi-label">Year-1 Operating Cost</span>
+          <div class="kpi-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiOpex">$74.8M</div>
+        <div class="kpi-subtext" id="kpiOpexSub">Colo & Power: ~$39.5M / yr</div>
+      </div>
+
+      <!-- 3. EBITDA & Margin -->
+      <div class="kpi-card" style="--card-accent: #10b981; --icon-bg: #d1fae5; --icon-color: #047857;">
+        <div class="kpi-header">
+          <span class="kpi-label">Year-1 EBITDA</span>
+          <div class="kpi-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiEbitda">$298.4M</div>
+        <div class="kpi-subtext">
+          <span class="kpi-tag tag-success" id="kpiEbitdaMargin">80.0% margin</span>
+          <span>from $373.2M rev</span>
+        </div>
+      </div>
+
+      <!-- 4. Full-Cost Break-even -->
+      <div class="kpi-card" style="--card-accent: #d97706; --icon-bg: #fef3c7; --icon-color: #b45309;">
+        <div class="kpi-header">
+          <span class="kpi-label">Full-Cost Break-Even</span>
+          <div class="kpi-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiBreakeven">$4.85/GPU-h</div>
+        <div class="kpi-subtext" id="kpiCashBreakeven">Cash Break-Even: $1.24</div>
+      </div>
+
+      <!-- 5. 10-Yr Project IRR -->
+      <div class="kpi-card" style="--card-accent: #7c3aed; --icon-bg: #ede9fe; --icon-color: #6d28d9;">
+        <div class="kpi-header">
+          <span class="kpi-label">10-Yr Project IRR</span>
+          <div class="kpi-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiIrr">12.5%</div>
+        <div class="kpi-subtext">
+          <span class="kpi-tag tag-success" id="kpiDecisionBadge">CONDITIONAL GO</span>
+          <span id="kpiNpvText">NPV @ 12%: +$11.5M</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bankability Screen Notification Banner -->
+    <div id="bankabilityScreen" class="material-banner banner-success">
+      <!-- Populated reactively -->
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav-container">
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="summary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          <span class="tab-text-desktop">Interactive Summary & Controls</span>
+          <span class="tab-text-mobile">Summary</span>
+        </button>
+        <button class="tab-btn" data-tab="capex">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          <span class="tab-text-desktop">Detailed CAPEX</span>
+          <span class="tab-text-mobile">CAPEX</span>
+        </button>
+        <button class="tab-btn" data-tab="opex">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span class="tab-text-desktop">OPEX & Colocation Power</span>
+          <span class="tab-text-mobile">OPEX & Power</span>
+        </button>
+        <button class="tab-btn" data-tab="returns">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span class="tab-text-desktop">P&L, Balance Sheet, Cash Flow & Unit Costs</span>
+          <span class="tab-text-mobile">Financials & Returns</span>
+        </button>
+        <button class="tab-btn" data-tab="sensitivity">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+          <span class="tab-text-desktop">Sensitivity Matrix (Price vs Util)</span>
+          <span class="tab-text-mobile">Sensitivity</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ====================================================================
+         TAB 1: QUICK CALCULATOR & SUMMARY
+         ==================================================================== -->
+    <div id="tab-summary" class="tab-content active">
+      <div class="content-grid">
+        <!-- Left: Interactive Drivers -->
+        <div class="surface-card" id="inputsCard">
+          <div class="card-title-row">
+            <h2>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              Key Cost Drivers & Inputs
+            </h2>
+            <span class="card-actions-hint">Drag slider or type value</span>
+          </div>
+
+          <!-- Number of Servers -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputServers">B300 Servers (8 GPUs each)</label>
+              <span class="input-helper-badge">8,192 GPUs Total</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderServers" min="128" max="2048" step="64" value="1024">
+              </div>
+              <div class="number-input-container">
+                <input type="number" id="inputServers" class="form-input" min="1" max="5000" step="1" value="1024">
+              </div>
+            </div>
+            <div class="quick-preset-row">
+              <button type="button" class="btn-micro" data-set-servers="512">512 servers</button>
+              <button type="button" class="btn-micro" data-set-servers="1024">1,024 (Base)</button>
+              <button type="button" class="btn-micro" data-set-servers="1536">1,536 servers</button>
+            </div>
+            <p class="input-note">Base benchmark is 1,024 systems in 256 compute racks (4 servers / ~56 kW per rack).</p>
+          </div>
+
+          <!-- Server Planning Price -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputServerPrice">Complete Server Planning Price</label>
+              <span class="input-helper-badge">Market Benchmark</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderServerPrice" min="400000" max="750000" step="10000" value="550000">
+              </div>
+              <div class="number-input-container">
+                <span class="input-prefix">$</span>
+                <input type="number" id="inputServerPrice" class="form-input has-prefix" min="100000" max="1500000" step="5000" value="550000">
+              </div>
+            </div>
+            <div class="quick-preset-row">
+              <button type="button" class="btn-micro" data-set-price="500000">$500k</button>
+              <button type="button" class="btn-micro" data-set-price="550000">$550k (Base)</button>
+              <button type="button" class="btn-micro" data-set-price="600000">$600k</button>
+            </div>
+            <p class="input-note">Low: $475k (Bull) | Base: $550k (Reuters US regular-market benchmark) | Severe: $650k.</p>
+          </div>
+
+          <!-- GPU-Hour Price -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputGpuPrice">Realized Compute Price per GPU-Hour</label>
+              <span class="input-helper-badge">Blended Realization</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderGpuPrice" min="3.50" max="10.00" step="0.25" value="6.50">
+              </div>
+              <div class="number-input-container">
+                <span class="input-prefix">$</span>
+                <input type="number" id="inputGpuPrice" class="form-input has-prefix has-suffix" min="1" max="25" step="0.05" value="6.50">
+                <span class="input-suffix">/h</span>
+              </div>
+            </div>
+            <div class="quick-preset-row">
+              <button type="button" class="btn-micro" data-set-gpuprice="5.00">$5.00</button>
+              <button type="button" class="btn-micro" data-set-gpuprice="6.50">$6.50 (Base)</button>
+              <button type="button" class="btn-micro" data-set-gpuprice="8.00">$8.00 (Bull)</button>
+            </div>
+            <p class="input-note">Wholesale take-or-pay: $4.25–$5.75 | Reserved: $5.50–$7.00 | On-demand: $7.50–$9.50+.</p>
+          </div>
+
+          <!-- Billable Utilization -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputUtil">Billable Utilization (%)</label>
+              <span class="input-helper-badge">Annual Sold Hours</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderUtil" min="30" max="98" step="1" value="80">
+              </div>
+              <div class="number-input-container">
+                <input type="number" id="inputUtil" class="form-input has-suffix" min="10" max="100" step="1" value="80">
+                <span class="input-suffix">%</span>
+              </div>
+            </div>
+            <p class="input-note">80% = 7,008 billable hrs/GPU-yr (57.41M total GPU-hours across the cluster).</p>
+          </div>
+
+          <!-- Colocation Capacity Rent Rate -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputColoRate">Colocation Capacity Rent</label>
+              <span class="input-helper-badge">Space & Primary Cooling</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderColoRate" min="80" max="160" step="5" value="105">
+              </div>
+              <div class="number-input-container">
+                <span class="input-prefix">$</span>
+                <input type="number" id="inputColoRate" class="form-input has-prefix has-suffix" min="50" max="250" step="1" value="105">
+                <span class="input-suffix">/kW-mo</span>
+              </div>
+            </div>
+            <p class="input-note">Billed on Facility Maximum Equivalent (~20.59 MW at PUE 1.30). 7-Yr base benchmark: $105/kW-mo.</p>
+          </div>
+
+          <!-- Data Center PUE -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputPue">Facility PUE (Power Usage Effectiveness)</label>
+              <span class="input-helper-badge">Direct Liquid Cooled</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderPue" min="1.15" max="1.50" step="0.01" value="1.30">
+              </div>
+              <div class="number-input-container">
+                <input type="number" id="inputPue" class="form-input" min="1.05" max="2.00" step="0.01" value="1.30">
+              </div>
+            </div>
+            <p class="input-note">PUE 1.20 = 15.58 MW avg facility load | PUE 1.30 = 16.87 MW | PUE 1.40 = 18.17 MW.</p>
+          </div>
+
+          <!-- Annual Price Erosion -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputPriceErosion">Annual GPU Compute Price Erosion</label>
+              <span class="input-helper-badge">Hardware Obsolescence</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderPriceErosion" min="0" max="30" step="1" value="10">
+              </div>
+              <div class="number-input-container">
+                <input type="number" id="inputPriceErosion" class="form-input has-suffix" min="0" max="50" step="1" value="10">
+                <span class="input-suffix">%/yr</span>
+              </div>
+            </div>
+            <p class="input-note">Base: 10% annual price erosion before Year 5 hardware refresh ($400M).</p>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Cost Visualizations & Breakdown -->
+        <div>
+          <!-- CAPEX Breakdown Visual -->
+          <div class="surface-card">
+            <div class="card-title-row">
+              <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                Upfront CAPEX Allocation
+              </h3>
+              <span class="card-actions-hint">Total: <strong id="tdTotalUpfrontSummary">$758.8M</strong></span>
+            </div>
+            <div class="chart-box">
+              <canvas id="capexChart"></canvas>
+            </div>
+          </div>
+
+          <!-- OPEX Breakdown Visual -->
+          <div class="surface-card">
+            <div class="card-title-row">
+              <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Year-1 Operating Cost (OPEX) Distribution
+              </h3>
+              <span class="card-actions-hint">Total: <strong id="tdTotalOpexSummary">$74.8M / yr</strong></span>
+            </div>
+            <div class="chart-box">
+              <canvas id="opexChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         TAB 2: DETAILED CAPEX
+         ==================================================================== -->
+    <div id="tab-capex" class="tab-content">
+      <!-- Tab Context Executive Banner -->
+      <div class="tab-context-banner">
+        <div class="context-pill">
+          <span class="context-pill-label">Total Upfront:</span>
+          <strong class="context-pill-val" id="ctxCapexTotal">$758.8M</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Servers:</span>
+          <strong class="context-pill-val" id="ctxCapexServers">$571.6M</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Racks/Cooling:</span>
+          <strong class="context-pill-val" id="ctxCapexCooling">$22.0M</strong>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="surface-card">
+          <div class="card-title-row">
+            <h2>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              Detailed CAPEX Line Items
+            </h2>
+            <span class="card-actions-hint">Investment scope (USD)</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table capex-table" id="capexLineItemsTable">
+              <thead>
+                <tr>
+                  <th>Category / Item</th>
+                  <th>Formula / Details</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="tdServerPurchaseTitle"><strong>1,024 B300 Servers Purchase</strong></td>
+                  <td id="tdServerPurchaseDesc">1,024 servers × $550,000</td>
+                  <td class="text-right font-mono font-bold" id="tdServerPurchase">$563.2M</td>
+                </tr>
+                <tr>
+                  <td>Freight, Insurance, Staging (1.5%)</td>
+                  <td>Port Klang/KLIA to Johor/Cyberjaya</td>
+                  <td class="text-right font-mono" id="tdServerFreight">$8.4M</td>
+                </tr>
+                <tr style="background: var(--md-sys-color-surface-container-high);">
+                  <td><strong>Total Landed Server Cost</strong></td>
+                  <td>Complete HGX B300 hardware</td>
+                  <td class="text-right font-mono font-bold" id="tdLandedServer">$571.6M</td>
+                </tr>
+                <tr id="rowNetStorage" class="clickable-breakdown-row" title="Click to view or hide the 9 line-item breakdown">
+                  <td>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                      <span>800G Fabric, Switches & Storage</span>
+                      <span class="breakdown-toggle-pill" id="badgeNetStorageToggle">
+                        <span>9 items</span>
+                        <svg class="chevron-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
+                  </td>
+                  <td>384 switches, optics, ~30PB object storage</td>
+                  <td class="text-right font-mono" id="tdNetStorage">$131.9M</td>
+                </tr>
+                <!-- Expandable 800G Fabric, Storage & Network Breakdown Sub-Table -->
+                <tr id="rowNetStorageBreakdown" class="breakdown-details-row" style="display: none;">
+                  <td colspan="3">
+                    <div class="nested-breakdown-container">
+                      <div class="nested-breakdown-header">
+                        <div class="nested-breakdown-title">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                          </svg>
+                          <span>Additional Infrastructure & Network Breakdown</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                          <span class="nested-breakdown-note">Editable line items ($M)</span>
+                          <button type="button" class="btn-micro" id="btnResetFabricBreakdown" title="Reset all 9 items to Feasibility Study benchmark ($131.94M)">Reset Defaults ($131.94M)</button>
+                        </div>
+                      </div>
+                      <div class="table-responsive">
+                        <table class="nested-breakdown-table">
+                          <thead>
+                            <tr>
+                              <th>Line Item</th>
+                              <th>Scope & Specs</th>
+                              <th class="text-right col-metric-val">Base CAPEX ($M)</th>
+                            </tr>
+                          </thead>
+                        <tbody>
+                          <tr>
+                            <td><strong>800G fabric switches</strong></td>
+                            <td>384 switches (leaf, spine & core fabrics, 800 Gb/s OSFP ports)</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputFabricSwitches" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="46.08">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>800G optics/fiber/link budget</strong></td>
+                            <td>Active optical cables (AOC), optical transceivers, structured fiber trunking</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputOpticsFiber" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="36.86">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Management/storage Ethernet</strong></td>
+                            <td>Out-of-band management network, BMC switches, telemetry Ethernet</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputMgmtEth" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="5.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Fabric-management software/controllers</strong></td>
+                            <td>NVIDIA UFM / enterprise SDN cluster fabric management licenses</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputFabricSw" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="2.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>~30 PB usable parallel/object storage allowance</strong></td>
+                            <td>High-speed parallel file system / NVMe tier + object storage tier</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputStorage" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="18.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Management/login/control nodes</strong></td>
+                            <td>Bastion, scheduler head nodes, telemetry controllers & monitoring</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputMgmtNodes" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="3.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Cybersecurity/telemetry appliances</strong></td>
+                            <td>Firewalls, intrusion detection, DDoS mitigation & security gateways</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputCyberApp" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="3.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Cluster integration, test and acceptance</strong></td>
+                            <td>Factory cabling pre-assembly, burn-in validation, NCCL benchmark tests</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputIntegration" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="8.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Initial FRU/spares pool</strong></td>
+                            <td>Field Replaceable Units (switches, optics, cables, power modules)</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputSparesPool" class="form-input text-right font-mono font-bold" min="0" max="500" step="0.01" value="10.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr class="nested-breakdown-total">
+                            <td><strong>Network/storage/security/integration subtotal</strong></td>
+                            <td>Sum of 9 infrastructure line items (dynamically updates all CAPEX & return models)</td>
+                            <td class="text-right font-mono font-bold" id="tdBreakdownSubtotal" style="color: var(--md-sys-color-primary); font-size: 0.95rem;">$131.94M</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </td>
+                </tr>
+                <tr id="rowRacksCooling" class="clickable-breakdown-row" title="Click to view or hide the 6 line-item racks and cooling breakdown">
+                  <td>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                      <span>Racks & Liquid Cooling (CDUs)</span>
+                      <span class="breakdown-toggle-pill" id="badgeRacksCoolingToggle">
+                        <span>6 items</span>
+                        <svg class="chevron-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
+                  </td>
+                  <td>320 racks, secondary CDUs, manifolds, leak detection</td>
+                  <td class="text-right font-mono" id="tdRacksCooling">$22.0M</td>
+                </tr>
+                <!-- Expandable Racks & Liquid Cooling Breakdown Sub-Table -->
+                <tr id="rowRacksCoolingBreakdown" class="breakdown-details-row" style="display: none;">
+                  <td colspan="3">
+                    <div class="nested-breakdown-container">
+                      <div class="nested-breakdown-header">
+                        <div class="nested-breakdown-title">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                          </svg>
+                          <span>Racks & Project-Side Liquid Cooling Breakdown</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                          <span class="nested-breakdown-note">Editable line items ($M)</span>
+                          <button type="button" class="btn-micro" id="btnResetRacksBreakdown" title="Reset all 6 items to Feasibility Study benchmark ($22.00M)">Reset Defaults ($22.00M)</button>
+                        </div>
+                      </div>
+                      <div class="table-responsive">
+                        <table class="nested-breakdown-table">
+                          <thead>
+                            <tr>
+                              <th>Line Item</th>
+                              <th>Scope & Specs</th>
+                              <th class="text-right col-metric-val">Base CAPEX ($M)</th>
+                            </tr>
+                          </thead>
+                        <tbody>
+                          <tr>
+                            <td><strong>Compute racks/PDU allowance</strong></td>
+                            <td>256 compute racks (48U high-density, dual 415V/63A intelligent PDUs)</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputComputeRacks" class="form-input text-right font-mono font-bold" min="0" max="100" step="0.01" value="5.12">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Network/storage/control racks/PDU allowance</strong></td>
+                            <td>64 network fabric, storage & management racks with metered PDUs</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputNetStorageRacks" class="form-input text-right font-mono font-bold" min="0" max="100" step="0.01" value="2.88">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>CDU systems</strong></td>
+                            <td>Secondary in-row / in-rack Coolant Distribution Units (N+1 redundancy)</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputCduSystems" class="form-input text-right font-mono font-bold" min="0" max="100" step="0.01" value="7.20">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Manifold/hoses/valves</strong></td>
+                            <td>Stainless steel supply/return manifolds, quick-disconnect dripless hoses</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputManifolds" class="form-input text-right font-mono font-bold" min="0" max="100" step="0.01" value="3.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Leak detection/controls</strong></td>
+                            <td>Rope leak sensors, automated shut-off solenoid valves & telemetry PLC</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputLeakDetection" class="form-input text-right font-mono font-bold" min="0" max="50" step="0.01" value="0.80">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td><strong>Liquid-loop integration/commissioning</strong></td>
+                            <td>Hydraulic pressure testing, flushing, deionized water treatment & commissioning</td>
+                            <td class="text-right">
+                              <div class="table-num-input-wrap">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="inputLoopCommissioning" class="form-input text-right font-mono font-bold" min="0" max="100" step="0.01" value="3.00">
+                                <span class="input-suffix">M</span>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr class="nested-breakdown-total">
+                            <td><strong>Racks + project-side liquid cooling</strong></td>
+                            <td>Sum of 6 rack and liquid cooling components (updates all CAPEX & models)</td>
+                            <td class="text-right font-mono font-bold" id="tdRacksBreakdownSubtotal" style="color: var(--md-sys-color-primary); font-size: 0.95rem;">$22.00M</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </td>
+                </tr>
+                <tr style="background: var(--md-sys-color-surface-container-high);">
+                  <td><strong>Total Installed IT CAPEX</strong></td>
+                  <td>Depreciable IT Assets (4-Yr Life)</td>
+                  <td class="text-right font-mono font-bold" id="tdInstalledIt">$725.6M</td>
+                </tr>
+                <tr>
+                  <td>Colocation Deposit & Setup</td>
+                  <td>3-4 months capacity deposit + cross connects</td>
+                  <td class="text-right font-mono" id="tdColoDeposit">$8.2M</td>
+                </tr>
+                <tr>
+                  <td>Initial Liquidity Reserve</td>
+                  <td>SPV cash cushion prior to revenue ramp</td>
+                  <td class="text-right font-mono" id="tdLiquidity">$25.0M</td>
+                </tr>
+                <tr class="total-row">
+                  <td><strong>Gross Project Capital (CAPEX)</strong></td>
+                  <td>Hardware purchase, facility setup & liquidity reserve</td>
+                  <td class="text-right font-mono font-bold" id="tdTotalUpfront" style="font-size: 1.0rem;">$758.8M</td>
+                </tr>
+                <tr id="trCapexPrepayRow" style="display: none; background: rgba(16, 185, 129, 0.08);">
+                  <td><strong style="color: #047857;">Less: Customer Prepayment</strong></td>
+                  <td style="color: #047857;">Anchor customer upfront capacity commitment</td>
+                  <td class="text-right font-mono font-bold" id="tdCapexPrepay" style="color: #047857; font-size: 0.95rem;">-$0.0M</td>
+                </tr>
+                <tr id="trCapexNetRow" class="total-row" style="background: var(--md-sys-color-surface-container-high);">
+                  <td><strong style="color: var(--md-sys-color-primary);">NET EXTERNAL FUNDING REQUIRED</strong></td>
+                  <td>External capital required from Bank Debt + Shareholder Equity</td>
+                  <td class="text-right font-mono font-bold" id="tdCapexNetFunding" style="color: var(--md-sys-color-primary); font-size: 1.05rem;">$758.8M</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Funding & Debt Structure -->
+        <div class="surface-card">
+          <div class="card-title-row">
+            <h2>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+              Funding Structure & Debt Terms
+            </h2>
+            <span class="card-actions-hint">Financing simulation</span>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputCustomerPrepay">Customer Prepayment ($M)</label>
+              <span class="input-helper-badge">Anchor Offtake</span>
+            </div>
+            <div class="number-input-container" style="flex: 1;">
+              <span class="input-prefix">$</span>
+              <input type="number" id="inputCustomerPrepay" class="form-input has-prefix has-suffix" min="0" max="500" step="5" value="0">
+              <span class="input-suffix">M</span>
+            </div>
+            <p class="input-note">If customer contributes ~50% server cost ($281.6M), external cash drops toward $477.2M (creates future service delivery liability).</p>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputDebtPct">Senior Debt Financing Share (%)</label>
+              <span class="input-helper-badge">Asset-Backed</span>
+            </div>
+            <div class="number-input-container" style="flex: 1;">
+              <input type="number" id="inputDebtPct" class="form-input has-suffix" min="0" max="75" step="2.5" value="47.5">
+              <span class="input-suffix">%</span>
+            </div>
+            <p class="input-note" id="noteDebtPct">Base modeled leverage: 47.5% debt ($360.4M) vs 52.5% equity ($398.4M).</p>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputDebtRate">Debt Interest Rate (%)</label>
+              <span class="input-helper-badge">4-Yr Amortization</span>
+            </div>
+            <div class="number-input-container" style="flex: 1;">
+              <input type="number" id="inputDebtRate" class="form-input has-suffix" min="3" max="15" step="0.25" value="9.0">
+              <span class="input-suffix">%</span>
+            </div>
+            <p class="input-note">9.0% model rate reflects Malaysian SPV without investment-grade parent guarantee. Nebius closed at SOFR + 2.50% in 2026.</p>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputDiscountRate">Discount / Hurdle Rate (%)</label>
+              <span class="input-helper-badge">Project WACC / Hurdle</span>
+            </div>
+            <div class="number-input-container" style="flex: 1;">
+              <input type="number" id="inputDiscountRate" class="form-input has-suffix" min="1" max="30" step="0.5" value="12.0">
+              <span class="input-suffix">%</span>
+            </div>
+            <p class="input-note">Hurdle rate used to discount 10-year project cash flows for NPV calculation and investment screening (Default: 12.0%).</p>
+          </div>
+
+          <div class="table-responsive" style="margin-top: 1rem;">
+            <table class="data-table funding-structure-table">
+              <thead>
+                <tr>
+                  <th>Capital Structure Source</th>
+                  <th class="text-right">Share</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr id="rowFundingPrepay" style="display: none; background: rgba(16, 185, 129, 0.08);">
+                  <td>
+                    <strong style="color: #047857;">Customer Prepayment</strong>
+                    <span class="table-cell-sub" style="color: #047857;">Anchor customer cash upfront</span>
+                  </td>
+                  <td class="text-right font-mono font-bold" id="tdPrepayPct" style="color: #047857;">0.0%</td>
+                  <td class="text-right font-mono font-bold" id="tdPrepayAmount" style="color: #047857;">$0.0M</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Senior Bank Borrowing</strong>
+                    <span class="table-cell-sub">Asset-backed equipment debt</span>
+                  </td>
+                  <td class="text-right font-mono" id="tdSeniorDebtPct">47.5%</td>
+                  <td class="text-right font-mono font-bold" id="tdSeniorDebt">$360.4M</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Shareholder / Sponsor Equity</strong>
+                    <span class="table-cell-sub">Equity capital funded by shareholders</span>
+                  </td>
+                  <td class="text-right font-mono" id="tdEquityPct">52.5%</td>
+                  <td class="text-right font-mono font-bold" id="tdEquity">$398.4M</td>
+                </tr>
+                <tr class="total-row" style="background: var(--md-sys-color-surface-container-high);">
+                  <td><strong>Total Sources of Capital</strong></td>
+                  <td class="text-right font-mono font-bold">100.0%</td>
+                  <td class="text-right font-mono font-bold" id="tdTotalSources" style="color: var(--md-sys-color-primary); font-size: 0.95rem;">$758.8M</td>
+                </tr>
+                <tr style="border-top: 1.5px dashed var(--md-sys-color-outline-variant);">
+                  <td colspan="2">
+                    <strong>Annual Bank Debt Service</strong>
+                    <span class="table-cell-sub">Principal + interest amortized over 4 years</span>
+                  </td>
+                  <td class="text-right font-mono font-bold" id="tdDebtService" style="color: #b45309;">$111.3M / yr</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         TAB 3: OPEX & COLOCATION POWER
+         ==================================================================== -->
+    <div id="tab-opex" class="tab-content">
+      <!-- Tab Context Executive Banner -->
+      <div class="tab-context-banner">
+        <div class="context-pill">
+          <span class="context-pill-label">Year-1 OPEX:</span>
+          <strong class="context-pill-val" id="ctxOpexTotal">$74.8M/yr</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Total IT Load:</span>
+          <strong class="context-pill-val" id="ctxOpexLoad">~12.98 MW</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Contracted:</span>
+          <strong class="context-pill-val" id="ctxOpexReserved">16.5 MW</strong>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <!-- LEFT COLUMN: CONTROLS & ASSUMPTIONS -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+            <!-- Card 1: Colocation Space & Utility Demand Drivers -->
+          <div class="surface-card">
+            <div class="card-title-row">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Colocation Space & Power Rates
+              </h2>
+              <span class="card-actions-hint">Engineering Load Model & Rates</span>
+            </div>
+
+            <!-- Engineering Load Model Header & Table -->
+            <div class="nested-breakdown-header" style="margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+              <div class="nested-breakdown-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+                <span>Power, Racks and Liquid Cooling Engineering Load Model</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="nested-breakdown-note">Editable metrics (kW & MW)</span>
+                <button type="button" class="btn-micro" id="btnResetPowerModel" title="Reset power model parameters to Feasibility Study benchmark">Reset Defaults (16.5 MW)</button>
+              </div>
+            </div>
+
+            <div class="table-responsive" style="margin-bottom: 1.25rem;">
+              <table class="nested-breakdown-table power-load-table" id="powerLoadModelTable" style="font-size: 0.82rem;">
+                <thead>
+                  <tr>
+                    <th>Power Metric</th>
+                    <th>Specification / Engineering Basis</th>
+                    <th class="text-right col-metric-val">Base Design</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Maximum server power</strong></td>
+                    <td>Peak power per server at 100% compute stress test</td>
+                    <td class="text-right">
+                      <div class="table-num-input-wrap">
+                        <span class="input-prefix">~</span>
+                        <input type="number" id="inputMaxServerKw" class="form-input text-right font-mono font-bold" min="5" max="30" step="0.1" value="14.0">
+                        <span class="input-suffix">kW</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Average loaded server assumption</strong></td>
+                    <td>Continuous nominal operating workload power per server</td>
+                    <td class="text-right">
+                      <div class="table-num-input-wrap">
+                        <input type="number" id="inputServerAvgKwTable" class="form-input text-right font-mono font-bold" min="5" max="25" step="0.1" value="11.5">
+                        <span class="input-suffix">kW</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong id="labelServerAvgLoad">1,024-server average load</strong></td>
+                    <td id="descServerAvgLoad">1,024 servers × 11.5 kW continuous draw</td>
+                    <td class="text-right font-mono font-bold" id="tdServerAvgLoadMw">11.78 MW</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Network/storage/control average</strong></td>
+                    <td>Secondary fabric switches, storage clusters & control power</td>
+                    <td class="text-right">
+                      <div class="table-num-input-wrap">
+                        <span class="input-prefix">~</span>
+                        <input type="number" id="inputNetStorageAvgKw" class="form-input text-right font-mono font-bold" min="0" max="10" step="0.05" value="1.20">
+                        <span class="input-suffix">MW</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="power-highlight-row">
+                    <td><strong>Average total IT load</strong></td>
+                    <td>Baseline IT power draw (servers average + network average)</td>
+                    <td class="text-right font-mono font-bold" id="tdTotalAvgItLoadMw" style="color: var(--md-sys-color-primary); font-size: 0.9rem;">~12.98 MW</td>
+                  </tr>
+                  <tr>
+                    <td><strong id="labelServerMaxLoad">Maximum server load</strong></td>
+                    <td id="descServerMaxLoad">1,024 servers × 14.0 kW peak stress load</td>
+                    <td class="text-right font-mono font-bold" id="tdServerMaxLoadMw">14.34 MW</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Network/storage/control maximum</strong></td>
+                    <td>Peak auxiliary fabric, storage write spikes & control load</td>
+                    <td class="text-right">
+                      <div class="table-num-input-wrap">
+                        <span class="input-prefix">~</span>
+                        <input type="number" id="inputNetStorageMaxMw" class="form-input text-right font-mono font-bold" min="0" max="10" step="0.05" value="1.50">
+                        <span class="input-suffix">MW</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="power-highlight-row">
+                    <td><strong>Maximum total IT load</strong></td>
+                    <td>Peak facility IT demand (servers peak + network peak)</td>
+                    <td class="text-right font-mono font-bold" id="tdTotalMaxItLoadMw" style="color: var(--md-sys-color-primary); font-size: 0.9rem;">~15.84 MW</td>
+                  </tr>
+                  <tr class="power-primary-row">
+                    <td><strong>Commercial IT reservation</strong></td>
+                    <td>Contracted capacity commitment with colocation provider</td>
+                    <td class="text-right">
+                      <div class="table-num-input-wrap">
+                        <input type="number" id="inputReservedMwTable" class="form-input text-right font-mono font-bold" min="5" max="50" step="0.1" value="16.5">
+                        <span class="input-suffix">MW</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="power-highlight-row">
+                    <td><strong id="labelFacilityAvgPue">Facility average at PUE 1.30</strong></td>
+                    <td>Total grid power draw including DLC & primary chillers</td>
+                    <td class="text-right font-mono font-bold" id="tdFacilityAvgLoadMw" style="color: var(--md-sys-color-primary); font-size: 0.95rem;">~16.87 MW</td>
+                  </tr>
+                  <tr class="power-highlight-row">
+                    <td><strong id="labelFacilityMaxPue">Facility maximum equivalent at PUE 1.30</strong></td>
+                    <td>Maximum peak grid substation draw buffer equivalent</td>
+                    <td class="text-right font-mono font-bold" id="tdFacilityMaxEquivalentMw" style="font-size: 0.95rem;">~20.59 MW</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Sliders & Fast Controls -->
+            <div class="category-header" style="margin-top: 0.25rem;">
+              <span>Contracted Reservation & Average Load Sliders</span>
+              <span style="font-weight: 500; text-transform: none; font-size: 0.7rem;">Live Synchronized</span>
+            </div>
+
+            <!-- Contracted IT Capacity -->
+            <div class="input-group">
+              <div class="input-label-row">
+                <label class="input-label" for="inputReservedMw">Contracted IT Capacity (MW)</label>
+                <span class="input-helper-badge">Commercial Reservation</span>
+              </div>
+              <div class="input-field-wrap">
+                <div class="slider-container">
+                  <input type="range" id="sliderReservedMw" min="10" max="25" step="0.5" value="16.5">
+                </div>
+                <div class="number-input-container">
+                  <input type="number" id="inputReservedMw" class="form-input has-suffix" min="5" max="30" step="0.1" value="16.5">
+                  <span class="input-suffix">MW</span>
+                </div>
+              </div>
+              <p class="input-note">Reservation commitment: 16.5 MW provides headroom over peak IT load (~15.84 MW).</p>
+            </div>
+
+            <!-- Server Avg Load -->
+            <div class="input-group">
+              <div class="input-label-row">
+                <label class="input-label" for="inputServerAvgKw">Average Loaded Server Power (kW)</label>
+                <span class="input-helper-badge">Continuous</span>
+              </div>
+              <div class="input-field-wrap">
+                <div class="slider-container">
+                  <input type="range" id="sliderServerAvgKw" min="8.0" max="15.0" step="0.5" value="11.5">
+                </div>
+                <div class="number-input-container">
+                  <input type="number" id="inputServerAvgKw" class="form-input has-suffix" min="5" max="20" step="0.1" value="11.5">
+                  <span class="input-suffix">kW</span>
+                </div>
+              </div>
+              <p class="input-note">11.5 kW avg load per server (11.78 MW server + 1.20 MW network = <span id="textAvgItLoad" class="font-bold">12.98 MW</span> IT load).</p>
+            </div>
+
+            <!-- Two-Column Grid for Rates -->
+            <div class="input-grid-2col">
+              <!-- Colocation Capacity Rent Rate -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputColoRateOpex">Colo Rent ($/kW-mo)</label>
+                  <span class="input-helper-badge">Space</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputColoRateOpex" class="form-input has-prefix has-suffix" min="50" max="250" step="1" value="105">
+                  <span class="input-suffix">/kW-mo</span>
+                </div>
+                <p class="input-note">7-Yr benchmark: $105/kW-mo capacity commitment.</p>
+              </div>
+
+              <!-- PUE -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputPueOpex">Facility PUE</label>
+                  <span class="input-helper-badge">Cooling Efficiency</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <input type="number" id="inputPueOpex" class="form-input" min="1.05" max="2.00" step="0.01" value="1.30">
+                </div>
+                <p class="input-note">Direct Liquid Cooling benchmark (1.20 - 1.40).</p>
+              </div>
+            </div>
+
+            <div class="input-grid-2col">
+              <!-- Electricity Tariff -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputElecRate">Electricity Rate ($/kWh)</label>
+                  <span class="input-helper-badge">TNB HV</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputElecRate" class="form-input has-prefix has-suffix" min="0.05" max="0.30" step="0.005" value="0.1141">
+                  <span class="input-suffix">/kWh</span>
+                </div>
+                <p class="input-note">TNB Tariff E2/E3 high-voltage base + ICPT.</p>
+              </div>
+
+              <!-- Demand Charge -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputDemandRate">Demand Charge ($/kW-mo)</label>
+                  <span class="input-helper-badge">Peak Tariff</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputDemandRate" class="form-input has-prefix has-suffix" min="2" max="20" step="0.25" value="7.63">
+                  <span class="input-suffix">/kW-mo</span>
+                </div>
+                <p class="input-note">Utility maximum capacity demand charge.</p>
+              </div>
+            </div>
+
+            <div class="material-banner banner-info" style="margin-top: 0.5rem;">
+              <div class="banner-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </div>
+              <div class="banner-content">
+                <h4>Total Facility Power Draw: <span id="textFacilityLoad" class="font-bold">16.87 MW</span></h4>
+                <p>Energy consumption is billed on facility average load (16.87 MW), while colocation capacity rent and utility capacity demand charges are based on facility maximum equivalent at design PUE (20.59 MW).</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Fixed Operational Costs & SG&A Line Items (Fully Editable) -->
+          <div class="surface-card">
+            <div class="card-title-row">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Fixed Operational & SG&A Costs
+              </h2>
+              <span class="card-actions-hint font-bold" id="textFixedOpexTotalSummary">$30.55M / yr ($2.55M / mo)</span>
+            </div>
+            <p class="input-note" style="margin-bottom: 1rem;">
+              All 11 fixed operating cost line items are editable below. When modified, total OPEX, cash flows, EBITDA, and break-even pricing automatically recalculate based on your revised values.
+            </p>
+
+            <!-- Section 1: Cluster Hardware, Software & Network -->
+            <div class="category-header">
+              <span>Cluster Hardware & Network Support</span>
+              <span style="font-weight: 500; text-transform: none; font-size: 0.7rem;">Direct Technical SLA</span>
+            </div>
+
+            <div class="input-grid-2col">
+              <!-- HW Maintenance -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputHwMaint">Hardware Maintenance</label>
+                  <span class="input-helper-badge">OEM Support</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputHwMaint" class="form-input has-prefix has-suffix" min="0" max="30" step="0.05" value="8.45">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">~1.5% of installed IT CAPEX (24/7 OEM spare parts, chassis & RMA).</p>
+              </div>
+
+              <!-- Software Licenses -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputSwLicenses">Software & Licenses</label>
+                  <span class="input-helper-badge">NVIDIA AI Ent</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputSwLicenses" class="form-input has-prefix has-suffix" min="0" max="20" step="0.05" value="4.00">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Enterprise cluster stack, Slurm orchestrator, telemetry & drivers.</p>
+              </div>
+
+              <!-- Internet WAN -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputInternetWan">Internet & Cross-Connects</label>
+                  <span class="input-helper-badge">Dark Fiber</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputInternetWan" class="form-input has-prefix has-suffix" min="0" max="15" step="0.05" value="3.00">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Redundant IP transit, telco dark-fiber ring & intra-campus cross-connects.</p>
+              </div>
+
+              <!-- Remote Hands -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputRemoteHands">Remote Hands Service</label>
+                  <span class="input-helper-badge">On-Site Smart Hands</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputRemoteHands" class="form-input has-prefix has-suffix" min="0" max="5" step="0.05" value="0.60">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Data center facility technician smart-hands SLA and physical swaps.</p>
+              </div>
+            </div>
+
+            <!-- Section 2: Operations & Staffing -->
+            <div class="category-header">
+              <span>Operations & Engineering Personnel</span>
+              <span style="font-weight: 500; text-transform: none; font-size: 0.7rem;">Headcount & Payroll</span>
+            </div>
+
+            <div class="input-grid-2col">
+              <!-- Ops Staff -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputOpsEng">Operations & Engineering</label>
+                  <span class="input-helper-badge">24/7 Site Team</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputOpsEng" class="form-input has-prefix has-suffix" min="0" max="15" step="0.05" value="3.50">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Site reliability engineers, HPC fabric technicians & shift leads.</p>
+              </div>
+
+              <!-- Customer Support -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputCustSupport">Customer Support Team</label>
+                  <span class="input-helper-badge">Dedicated TAMs</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputCustSupport" class="form-input has-prefix has-suffix" min="0" max="10" step="0.05" value="1.50">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Technical account managers (TAMs), onboarding & ticketing support.</p>
+              </div>
+
+              <!-- Corporate Staff -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputCorpStaff">Corporate & Finance Staff</label>
+                  <span class="input-helper-badge">Management</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputCorpStaff" class="form-input has-prefix has-suffix" min="0" max="10" step="0.05" value="2.00">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">SPV leadership, treasury, accounting, billing & financial controllers.</p>
+              </div>
+            </div>
+
+            <!-- Section 3: Risk, Compliance & SG&A -->
+            <div class="category-header">
+              <span>Risk Management, Governance & SG&A</span>
+              <span style="font-weight: 500; text-transform: none; font-size: 0.7rem;">Corporate & Compliance</span>
+            </div>
+
+            <div class="input-grid-2col">
+              <!-- Insurance -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputInsurance">Insurance Coverage</label>
+                  <span class="input-helper-badge">P&C, Interruption, D&O</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputInsurance" class="form-input has-prefix has-suffix" min="0" max="15" step="0.05" value="3.00">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">All-risk physical equipment property casualty, business interruption & D&O.</p>
+              </div>
+
+              <!-- Cybersecurity -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputCyberSecurity">Cybersecurity Protection</label>
+                  <span class="input-helper-badge">SOC2 / ISO 27001</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputCyberSecurity" class="form-input has-prefix has-suffix" min="0" max="10" step="0.05" value="2.00">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Continuous 24/7 SIEM, DDoS defense, compliance audits & penetration testing.</p>
+              </div>
+
+              <!-- Legal & Compliance -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputLegalCompliance">Legal & Export Compliance</label>
+                  <span class="input-helper-badge">US BIS / KYC</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputLegalCompliance" class="form-input has-prefix has-suffix" min="0" max="10" step="0.05" value="1.00">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">US BIS EAR export-control screening, customer KYC, offtake contracts & regulatory.</p>
+              </div>
+
+              <!-- Admin & Audit -->
+              <div class="input-group">
+                <div class="input-label-row">
+                  <label class="input-label" for="inputAdminAudit">Admin & External Audit</label>
+                  <span class="input-helper-badge">Statutory Audit</span>
+                </div>
+                <div class="number-input-container" style="width: 100%;">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="inputAdminAudit" class="form-input has-prefix has-suffix" min="0" max="10" step="0.05" value="1.50">
+                  <span class="input-suffix">M/yr</span>
+                </div>
+                <p class="input-note">Big-4 financial audit, corporate secretarial, tax advisory & local filing.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: FULL OPERATING BUDGET SCHEDULE & UNIT METRICS -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+          <!-- Card 3: Full Year-1 Operating Budget Table -->
+          <div class="surface-card">
+            <div class="card-title-row">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Full Year-1 Operating Budget
+              </h2>
+              <span class="card-actions-hint">Itemized Monthly & Annual Schedule</span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table opex-budget-table" id="opexBudgetTable">
+                <thead>
+                  <tr>
+                    <th>Operating Expense Line</th>
+                    <th class="text-right">Monthly</th>
+                    <th class="text-right">Annual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Category 1: Colocation Space & Utilities -->
+                  <tr class="category-divider-row">
+                    <td colspan="3">1. Colocation Space & Power Facility</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <span id="tdColoRentLabel">Colocation Capacity Rent</span>
+                      <span class="table-cell-sub" id="tdColoRentFormula">20.59 MW @ $105/kW-mo (Facility Max @ PUE 1.30)</span>
+                    </td>
+                    <td class="text-right font-mono" id="tdColoRentMo">$2.16M</td>
+                    <td class="text-right font-mono font-bold" id="tdColoRentYr">$25.94M</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      Electricity Energy Consumption
+                      <span class="table-cell-sub" id="tdElecEnergyFormula">16.87 MW @ $0.1141/kWh (730h/mo avg load)</span>
+                    </td>
+                    <td class="text-right font-mono" id="tdElecEnergyMo">$1.41M</td>
+                    <td class="text-right font-mono" id="tdElecEnergyYr">$16.87M</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      Utility Capacity Demand Charge
+                      <span class="table-cell-sub" id="tdElecDemandFormula">20.59 MW @ $7.63/kW-mo (Facility Max @ PUE 1.30)</span>
+                    </td>
+                    <td class="text-right font-mono" id="tdElecDemandMo">$0.16M</td>
+                    <td class="text-right font-mono" id="tdElecDemandYr">$1.88M</td>
+                  </tr>
+                  <tr id="rowColoPowerSubtotal" class="clickable-breakdown-row subtotal-row" title="Click to view or hide the Engineering Load Model and power rate breakdown">
+                    <td>
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                        <span>Subtotal: Total Colocation & Power</span>
+                        <span class="breakdown-toggle-pill" id="badgeColoPowerToggle">
+                          <span>Load Model (11 items)</span>
+                          <svg class="chevron-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </span>
+                      </div>
+                    </td>
+                    <td class="text-right font-mono" id="tdElecMo">$3.72M</td>
+                    <td class="text-right font-mono font-bold" id="tdElecYr">$44.69M</td>
+                  </tr>
+                  <!-- Expandable Colocation & Power Load Model Breakdown Sub-Table -->
+                  <tr id="rowColoPowerBreakdown" class="breakdown-details-row" style="display: none;">
+                    <td colspan="3">
+                      <div class="nested-breakdown-container">
+                        <div class="nested-breakdown-header">
+                          <div class="nested-breakdown-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            </svg>
+                            <span>Power, Racks and Liquid Cooling Engineering Load Model</span>
+                          </div>
+                          <span class="nested-breakdown-note">Technical Load Specifications</span>
+                        </div>
+                        <div class="table-responsive">
+                          <table class="nested-breakdown-table">
+                            <thead>
+                              <tr>
+                                <th>Power Metric</th>
+                                <th>Engineering Basis / Operational Scope</th>
+                                <th class="text-right col-metric-val">Base Design</th>
+                              </tr>
+                            </thead>
+                          <tbody>
+                            <tr>
+                              <td>Maximum server power</td>
+                              <td>Peak compute power stress benchmark</td>
+                              <td class="text-right font-mono font-bold" id="tdSubMaxServerKw">~14.0 kW/server</td>
+                            </tr>
+                            <tr>
+                              <td>Average loaded server assumption</td>
+                              <td>Nominal continuous operating workload power</td>
+                              <td class="text-right font-mono font-bold" id="tdSubServerAvgKw">11.5 kW/server</td>
+                            </tr>
+                            <tr>
+                              <td><span id="tdSubServerAvgLoadLabel">1,024-server average load</span></td>
+                              <td id="tdSubServerAvgLoadDesc">1,024 servers × 11.5 kW continuous draw</td>
+                              <td class="text-right font-mono font-bold" id="tdSubServerAvgLoadMw">11.78 MW</td>
+                            </tr>
+                            <tr>
+                              <td>Network/storage/control average</td>
+                              <td>Secondary fabric switches, storage clusters & control power</td>
+                              <td class="text-right font-mono font-bold" id="tdSubNetStorageAvgMw">~1.20 MW</td>
+                            </tr>
+                            <tr class="power-highlight-row">
+                              <td><strong>Average total IT load</strong></td>
+                              <td>Server avg load + network/storage avg</td>
+                              <td class="text-right font-mono font-bold" id="tdSubTotalAvgItMw" style="color: var(--md-sys-color-primary);">~12.98 MW</td>
+                            </tr>
+                            <tr>
+                              <td><span id="tdSubServerMaxLoadLabel">Maximum server load</span></td>
+                              <td id="tdSubServerMaxLoadDesc">1,024 servers × 14.0 kW peak stress load</td>
+                              <td class="text-right font-mono font-bold" id="tdSubServerMaxLoadMw">14.34 MW</td>
+                            </tr>
+                            <tr>
+                              <td>Network/storage/control maximum</td>
+                              <td>Peak auxiliary fabric, storage write spikes & control load</td>
+                              <td class="text-right font-mono font-bold" id="tdSubNetStorageMaxMw">~1.50 MW</td>
+                            </tr>
+                            <tr class="power-highlight-row">
+                              <td><strong>Maximum total IT load</strong></td>
+                              <td>Peak facility IT demand (servers peak + network peak)</td>
+                              <td class="text-right font-mono font-bold" id="tdSubTotalMaxItMw" style="color: var(--md-sys-color-primary);">~15.84 MW</td>
+                            </tr>
+                            <tr class="power-primary-row">
+                              <td><strong>Commercial IT reservation</strong></td>
+                              <td>Contracted capacity commitment with colocation provider</td>
+                              <td class="text-right font-mono font-bold" id="tdSubCommercialReservationMw">16.5 MW</td>
+                            </tr>
+                            <tr class="power-highlight-row">
+                              <td><span id="tdSubFacilityAvgPueLabel">Facility average at PUE 1.30</span></td>
+                              <td>Total grid draw: Average Total IT (12.98 MW) × PUE</td>
+                              <td class="text-right font-mono font-bold" id="tdSubFacilityAvgLoadMw" style="color: var(--md-sys-color-primary);">~16.87 MW</td>
+                            </tr>
+                            <tr class="power-highlight-row">
+                              <td><span id="tdSubFacilityMaxPueLabel">Facility maximum equivalent at PUE 1.30</span></td>
+                              <td>Peak grid substation draw: Peak IT (15.84 MW) × PUE</td>
+                              <td class="text-right font-mono font-bold" id="tdSubFacilityMaxEquivalentMw">~20.59 MW</td>
+                            </tr>
+                            <tr class="nested-breakdown-total">
+                              <td colspan="2"><strong>Colocation Space + Electricity Cost Model (Annualized)</strong></td>
+                              <td class="text-right font-mono font-bold" id="tdSubTotalColoPowerCost" style="color: var(--md-sys-color-primary); font-size: 0.95rem;">$39.54M / yr</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </td>
+                  </tr>
+
+                  <!-- Category 2: Fixed Infrastructure & Maintenance -->
+                  <tr class="category-divider-row">
+                    <td colspan="3">2. Fixed Hardware, Software & Network Infrastructure</td>
+                  </tr>
+                  <tr>
+                    <td>Hardware Maintenance & OEM Support</td>
+                    <td class="text-right font-mono" id="tdHwMaintMo">$0.70M</td>
+                    <td class="text-right font-mono" id="tdHwMaintYr">$8.45M</td>
+                  </tr>
+                  <tr>
+                    <td>Software & Cluster Licenses</td>
+                    <td class="text-right font-mono" id="tdSwLicensesMo">$0.33M</td>
+                    <td class="text-right font-mono" id="tdSwLicensesYr">$4.00M</td>
+                  </tr>
+                  <tr>
+                    <td>Internet, WAN & Cross-Connects</td>
+                    <td class="text-right font-mono" id="tdInternetWanMo">$0.25M</td>
+                    <td class="text-right font-mono" id="tdInternetWanYr">$3.00M</td>
+                  </tr>
+                  <tr>
+                    <td>Remote Hands & On-Site Service</td>
+                    <td class="text-right font-mono" id="tdRemoteHandsMo">$0.05M</td>
+                    <td class="text-right font-mono" id="tdRemoteHandsYr">$0.60M</td>
+                  </tr>
+
+                  <!-- Category 3: Personnel & Operations -->
+                  <tr class="category-divider-row">
+                    <td colspan="3">3. Cluster Engineering & Operational Staffing</td>
+                  </tr>
+                  <tr>
+                    <td>24/7 Operations & Engineering Staff</td>
+                    <td class="text-right font-mono" id="tdOpsEngMo">$0.29M</td>
+                    <td class="text-right font-mono" id="tdOpsEngYr">$3.50M</td>
+                  </tr>
+                  <tr>
+                    <td>Dedicated Customer Support Team</td>
+                    <td class="text-right font-mono" id="tdCustSupportMo">$0.13M</td>
+                    <td class="text-right font-mono" id="tdCustSupportYr">$1.50M</td>
+                  </tr>
+                  <tr>
+                    <td>Corporate & Finance Staff</td>
+                    <td class="text-right font-mono" id="tdCorpStaffMo">$0.17M</td>
+                    <td class="text-right font-mono" id="tdCorpStaffYr">$2.00M</td>
+                  </tr>
+
+                  <!-- Category 4: Risk, Governance & SG&A -->
+                  <tr class="category-divider-row">
+                    <td colspan="3">4. Governance, Compliance & Corporate SG&A</td>
+                  </tr>
+                  <tr>
+                    <td>Property, Casualty & D&O Insurance</td>
+                    <td class="text-right font-mono" id="tdInsuranceMo">$0.25M</td>
+                    <td class="text-right font-mono" id="tdInsuranceYr">$3.00M</td>
+                  </tr>
+                  <tr>
+                    <td>Cybersecurity & Threat Monitoring</td>
+                    <td class="text-right font-mono" id="tdCyberSecurityMo">$0.17M</td>
+                    <td class="text-right font-mono" id="tdCyberSecurityYr">$2.00M</td>
+                  </tr>
+                  <tr>
+                    <td>Legal & Export Control Compliance</td>
+                    <td class="text-right font-mono" id="tdLegalComplianceMo">$0.08M</td>
+                    <td class="text-right font-mono" id="tdLegalComplianceYr">$1.00M</td>
+                  </tr>
+                  <tr>
+                    <td>Administration & External Audit</td>
+                    <td class="text-right font-mono" id="tdAdminAuditMo">$0.13M</td>
+                    <td class="text-right font-mono" id="tdAdminAuditYr">$1.50M</td>
+                  </tr>
+                  <tr class="subtotal-row">
+                    <td>Subtotal: Total Fixed Overhead & SG&A (11 Lines)</td>
+                    <td class="text-right font-mono font-bold" id="tdFixedOpexMo">$2.55M</td>
+                    <td class="text-right font-mono font-bold" id="tdFixedOpexYr">$30.55M</td>
+                  </tr>
+
+                  <!-- Category 5: Revenue Variable Costs -->
+                  <tr class="category-divider-row">
+                    <td colspan="3">5. Revenue-Linked Commercial OPEX</td>
+                  </tr>
+                  <tr>
+                    <td>Sales & Marketing (1.25% of Revenue)</td>
+                    <td class="text-right font-mono" id="tdSalesMktgMo">$0.39M</td>
+                    <td class="text-right font-mono" id="tdSalesMktgYr">$4.66M</td>
+                  </tr>
+
+                  <!-- Grand Total Row -->
+                  <tr class="total-row">
+                    <td><strong>TOTAL OPERATING EXPENSES (OPEX)</strong></td>
+                    <td class="text-right font-mono font-bold" id="tdTotalOpexMo" style="color: var(--md-sys-color-primary); font-size: 1.05rem;">$6.23M</td>
+                    <td class="text-right font-mono font-bold" id="tdTotalOpexYr" style="color: var(--md-sys-color-primary); font-size: 1.1rem;">$74.75M</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Card 4: Operating Unit Cost & Efficiency Benchmarks -->
+          <div class="surface-card">
+            <div class="card-title-row">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-8 8"/><path d="M8 8h8v8"/></svg>
+                OPEX Unit Economics & Cost per Server
+              </h2>
+              <span class="card-actions-hint">Cluster Efficiency</span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody>
+                  <tr>
+                    <td>Total Operating Cost per Server</td>
+                    <td class="text-right font-mono font-bold" id="tdMonthlyOpexPerNode">$6,083 / mo</td>
+                  </tr>
+                  <tr>
+                    <td>Power & Utility Electricity per Server</td>
+                    <td class="text-right font-mono" id="tdElecPerNode">$1,526 / mo</td>
+                  </tr>
+                  <tr>
+                    <td>Colocation Space Capacity Rent per Server</td>
+                    <td class="text-right font-mono" id="tdColoPerNode">$1,692 / mo</td>
+                  </tr>
+                  <tr>
+                    <td>Fixed Maintenance & Overhead per Server</td>
+                    <td class="text-right font-mono" id="tdFixedPerNode">$2,486 / mo</td>
+                  </tr>
+                  <tr style="background: var(--md-sys-color-surface-container-high);">
+                    <td><strong>Cash OPEX per GPU-Hour</strong></td>
+                    <td class="text-right font-mono font-bold" id="tdCashOpexGpuHr">$1.30 / GPU-h</td>
+                  </tr>
+                  <tr style="background: var(--md-sys-color-surface-container-high);">
+                    <td><strong>EBITDA Cash Break-Even GPU Pricing</strong></td>
+                    <td class="text-right font-mono font-bold" id="tdCashBreakevenGpuHr" style="color: #047857;">$1.32 / GPU-h</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         TAB 4: P&L, UNIT COSTS & 10-YEAR CASH FLOW
+         ==================================================================== -->
+    <div id="tab-returns" class="tab-content">
+      <!-- Tab Context Executive Banner -->
+      <div class="tab-context-banner">
+        <div class="context-pill">
+          <span class="context-pill-label">Year-1 EBITDA:</span>
+          <strong class="context-pill-val" id="ctxReturnsEbitda">$298.4M</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Margin:</span>
+          <strong class="context-pill-val" id="ctxReturnsMargin">80.0%</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">10-Yr Project IRR:</span>
+          <strong class="context-pill-val" id="ctxReturnsIrr">12.5%</strong>
+        </div>
+      </div>
+
+      <!-- Master Forecast Horizon Segment Control -->
+      <div class="surface-card master-horizon-segment-card" id="masterHorizonBar" style="margin-bottom: 1.5rem; background: var(--md-sys-color-surface-container); border: 1.5px solid var(--md-sys-color-outline-variant);">
+        <div class="master-horizon-inner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div class="horizon-header-meta">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span class="segment-control-icon" style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: rgba(30, 64, 175, 0.12); color: var(--md-sys-color-primary);">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+              <strong style="font-size: 1rem; color: var(--md-sys-color-on-surface); font-weight: 700;">Financial Model Forecast Horizon</strong>
+              <span class="active-horizon-pill" id="activeHorizonPill" style="font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; background: var(--md-sys-color-primary); color: #fff;">10-Year Horizon Active</span>
+            </div>
+            <p style="font-size: 0.76rem; color: var(--md-sys-color-on-surface-variant); margin: 0;">
+              Select a period below to automatically change the <strong>P&L Statement</strong>, <strong>Balance Sheet</strong>, <strong>Cash Flow Statement</strong>, <strong>Free Cash Flow Chart</strong>, and <strong>Returns</strong>.
+            </p>
+          </div>
+
+          <!-- Master Segmented Controls -->
+          <div class="pnl-filter-bar master-filter-toolbar" style="margin-bottom: 0; padding: 0; background: transparent; border: none;">
+            <div class="pnl-horizon-group">
+              <span class="pnl-filter-label" style="font-weight: 700; color: var(--md-sys-color-on-surface);">Period:</span>
+              <div class="pnl-pill-tabs master-period-segments">
+                <button type="button" class="pnl-horizon-btn" data-horizon="1">1 Year</button>
+                <button type="button" class="pnl-horizon-btn" data-horizon="3">3 Years</button>
+                <button type="button" class="pnl-horizon-btn" data-horizon="5">5 Years</button>
+                <button type="button" class="pnl-horizon-btn active" data-horizon="10">10 Years</button>
+              </div>
+            </div>
+            <div class="pnl-mode-group" id="pnlModeGroup">
+              <span class="pnl-filter-label" style="font-weight: 700; color: var(--md-sys-color-on-surface);">View:</span>
+              <div class="pnl-pill-tabs">
+                <button type="button" class="pnl-mode-btn active" data-mode="columns">Year-by-Year</button>
+                <button type="button" class="pnl-mode-btn" data-mode="cumulative">Cumulative</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Profit & Loss Statement (P&L) (Full Width Top) -->
+      <div class="surface-card" style="margin-bottom: 1.5rem;" id="cardPnlStatement">
+        <div class="card-title-row">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            <span id="pnlCardTitle">10-Year Profit & Loss Statement (P&L)</span>
+          </h2>
+          <span class="card-actions-hint" id="pnlCurrencyHint">USD ($M)</span>
+        </div>
+
+        <div class="table-responsive pnl-table-container">
+          <table class="data-table pnl-multi-table" id="pnlTable">
+            <thead id="pnlTableHead">
+              <!-- Dynamically generated in app.js -->
+            </thead>
+            <tbody id="pnlTableBody">
+              <!-- Dynamically generated in app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <p id="pnlModelNote" style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem; margin-bottom: 0;">
+          * Multi-year model reflects annual price erosion, 2.5% OPEX escalation, Year-5 platform refresh, and amortizing debt.
+        </p>
+      </div>
+
+      <!-- 2. Balance Sheet Statement (Full Width) -->
+      <div class="surface-card" style="margin-bottom: 1.5rem;" id="cardBalanceSheet">
+        <div class="card-title-row">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <span id="balanceSheetCardTitle">10-Year Balance Sheet Statement</span>
+          </h2>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="balance-check-badge" id="balanceSheetBadge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Balanced ($0.00M diff)
+            </span>
+            <span class="card-actions-hint" id="balanceSheetCurrencyHint">USD ($M)</span>
+          </div>
+        </div>
+
+        <div class="table-responsive pnl-table-container">
+          <table class="data-table pnl-multi-table" id="balanceSheetTable">
+            <thead id="balanceSheetTableHead">
+              <!-- Dynamically generated in app.js -->
+            </thead>
+            <tbody id="balanceSheetTableBody">
+              <!-- Dynamically generated in app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <p id="balanceSheetModelNote" style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem; margin-bottom: 0;">
+          * Assets = Liabilities + Shareholders' Equity. Incorporates 4-year straight-line IT depreciation, senior debt principal amortization, customer prepayment recognition, and cumulative retained earnings.
+        </p>
+      </div>
+
+      <!-- 3. Cash Flow Statement & 10-Year Projection Chart (Full Width) -->
+      <div class="surface-card" style="margin-bottom: 1.5rem;" id="cardCashFlow">
+        <div class="card-title-row">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            <span id="cashFlowCardTitle">10-Year Cash Flow Statement & Free Cash Flow Projection</span>
+          </h2>
+          <span class="card-actions-hint" id="cashFlowCurrencyHint">USD ($M)</span>
+        </div>
+
+        <div class="table-responsive pnl-table-container" style="margin-bottom: 1.5rem;">
+          <table class="data-table pnl-multi-table" id="cashFlowTable">
+            <thead id="cashFlowTableHead">
+              <!-- Dynamically generated in app.js -->
+            </thead>
+            <tbody id="cashFlowTableBody">
+              <!-- Dynamically generated in app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="chart-header-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; border-top: 1px solid var(--md-sys-color-outline-variant); padding-top: 1rem;">
+          <div>
+            <h3 style="font-size: 0.95rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;" id="cashFlowChartTitle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+              <span id="cashFlowChartTitleText">10-Year Free Cash Flow (Blue Bars) & Cumulative Project Cash (Green Line)</span>
+            </h3>
+            <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Annual Free Cash Flow numbers rendered directly on top of each blue bar</span>
+          </div>
+          <span class="card-actions-hint">Includes Year-5 Refresh ($400M) & 10% annual price erosion</span>
+        </div>
+
+        <div class="chart-box" style="height: 340px;">
+          <canvas id="cashflowChart"></canvas>
+        </div>
+
+        <p id="cashFlowModelNote" style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem; margin-bottom: 0;">
+          * Unlevered Free Cash Flow (Project FCF) represents operating EBITDA minus corporate taxes and maintenance/refresh capital expenditures.
+        </p>
+      </div>
+
+      <!-- 4. Unit Cost Breakdown & Return Metrics (Full Width Bottom) -->
+      <div class="surface-card" style="margin-bottom: 1.5rem;" id="cardUnitEconomics">
+        <div class="card-title-row">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path></svg>
+            Unit Economics & Return Hurdle
+          </h2>
+          <span class="card-actions-hint">Per GPU & Per Server</span>
+        </div>
+
+        <div class="unit-returns-grid">
+          <!-- Left Column: Unit Cost Breakdown List -->
+          <div class="breakdown-list">
+            <div class="breakdown-item">
+              <div class="breakdown-item-main">
+                <span class="breakdown-bullet" style="background-color: #0f766e;"></span>
+                <div>
+                  <strong>Cash OPEX Cost per GPU-Hour</strong>
+                  <div class="breakdown-subtext">Direct out-of-pocket operating cost to run 1 GPU for 1 hour</div>
+                </div>
+              </div>
+              <div class="breakdown-item-val" id="unitCashOpex">$1.30 / GPU-hr</div>
+            </div>
+
+            <div class="breakdown-item">
+              <div class="breakdown-item-main">
+                <span class="breakdown-bullet" style="background-color: #d97706;"></span>
+                <div>
+                  <strong>Cash EBITDA Break-Even Price</strong>
+                  <div class="breakdown-subtext">Minimum price to cover cash facility & operations costs</div>
+                </div>
+              </div>
+              <div class="breakdown-item-val" id="unitCashBreakeven">$1.24 / GPU-hr</div>
+            </div>
+
+            <div class="breakdown-item" style="border: 2px solid var(--md-sys-color-primary);">
+              <div class="breakdown-item-main">
+                <span class="breakdown-bullet" style="background-color: var(--md-sys-color-primary);"></span>
+                <div>
+                  <strong>Full-Cost Break-Even Price (Year 1)</strong>
+                  <div class="breakdown-subtext">Includes 4-Yr IT Depreciation ($172.3M) + Debt Interest ($32.4M)</div>
+                </div>
+              </div>
+              <div class="breakdown-item-val" id="unitFullCost" style="color: var(--md-sys-color-primary); font-size: 1.05rem;">$4.85 / GPU-hr</div>
+            </div>
+
+            <div class="breakdown-item">
+              <div class="breakdown-item-main">
+                <span class="breakdown-bullet" style="background-color: #4f46e5;"></span>
+                <div>
+                  <strong>Monthly Cost per 8-GPU Server</strong>
+                  <div class="breakdown-subtext">Monthly cash OPEX / server (<span id="unitServerMonthlyOpex">$6,080 / mo</span>) vs Full Cost incl. Capex</div>
+                </div>
+              </div>
+              <div class="breakdown-item-val" id="unitServerMonthlyFull">$22,745 / mo</div>
+            </div>
+
+            <div class="breakdown-item">
+              <div class="breakdown-item-main">
+                <span class="breakdown-bullet" style="background-color: #059669;"></span>
+                <div>
+                  <strong>Dedicated 8-GPU Server Rate</strong>
+                  <div class="breakdown-subtext">Equivalent retail full-time rate ($52/server-hr × 730 hrs)</div>
+                </div>
+              </div>
+              <div class="breakdown-item-val" id="unitServerHourEquivalent">$52.00 / hr</div>
+            </div>
+          </div>
+
+          <!-- Right Column: 10-Year Modeled Returns & Payback -->
+          <div class="returns-summary-panel">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; margin: 0;" id="returnsPanelTitle">10-Year Modeled Returns & Payback</h4>
+              <div style="display: flex; align-items: center; gap: 0.45rem;">
+                <label for="inputDiscountRateTab4" style="font-size: 0.72rem; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">Discount / Hurdle Rate:</label>
+                <div class="table-num-input-wrap" style="width: 85px; height: 26px;">
+                  <input type="number" id="inputDiscountRateTab4" class="form-input text-right font-mono font-bold" min="1" max="30" step="0.5" value="12.0">
+                  <span class="input-suffix">%</span>
+                </div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Project IRR (Unlevered)</div>
+                <div style="font-size: 1.25rem; font-weight: 700;" id="metricProjectIrr">12.5%</div>
+              </div>
+              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Equity IRR (Levered)</div>
+                <div style="font-size: 1.25rem; font-weight: 700;" id="metricEquityIrr">15.6%</div>
+              </div>
+              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);" id="labelNpvHurdle">NPV @ 12.0% Hurdle</div>
+                <div style="font-size: 1.25rem; font-weight: 700;" id="metricNpv">+$11.5M</div>
+              </div>
+              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Initial Capital Payback</div>
+                <div style="font-size: 1.25rem; font-weight: 700;" id="metricPaybackInitial">3.4 years</div>
+              </div>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem;">
+              * Sustained cumulative payback after modeled Year-5 hardware refresh ($400M) is <strong id="metricPaybackSustained">5.7 years</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         TAB 5: SENSITIVITY MATRIX (PRICE VS UTILIZATION)
+         ==================================================================== -->
+    <div id="tab-sensitivity" class="tab-content">
+      <!-- Tab Context Executive Banner -->
+      <div class="tab-context-banner">
+        <div class="context-pill">
+          <span class="context-pill-label">Full-Cost Break-Even:</span>
+          <strong class="context-pill-val" id="ctxSensBreakeven">$4.85/h</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Current Price:</span>
+          <strong class="context-pill-val" id="ctxSensPrice">$6.50/h</strong>
+        </div>
+        <div class="context-pill">
+          <span class="context-pill-label">Base Util:</span>
+          <strong class="context-pill-val" id="ctxSensUtil">80%</strong>
+        </div>
+      </div>
+
+      <div class="surface-card">
+        <div class="card-title-row">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+            Revenue & EBITDA Sensitivity Matrix
+          </h2>
+          <span class="card-actions-hint">Price per GPU-Hour vs Billable Utilization (%)</span>
+        </div>
+        <p style="font-size: 0.825rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 1.25rem;">
+          Shows Year-1 EBITDA ($M) and Annual Revenue ($M) across combinations of realized compute price and customer utilization. 
+          The active scenario is highlighted with a blue border.
+        </p>
+
+        <div class="matrix-card-header" style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.65rem;">
+          <strong style="font-size: 0.95rem; color: var(--md-sys-color-on-surface);">EBITDA / Revenue</strong>
+          <span id="matrixUnitLabel" style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 500;">USD millions</span>
+        </div>
+
+        <div class="table-responsive sensitivity-table-container">
+          <table class="sensitivity-matrix-table">
+            <thead>
+              <tr>
+                <th class="matrix-th-price" id="matrixCornerTh">$/h</th>
+                <th class="matrix-th-util">50%</th>
+                <th class="matrix-th-util">60%</th>
+                <th class="matrix-th-util">70%</th>
+                <th class="matrix-th-util">80%*</th>
+                <th class="matrix-th-util">90%</th>
+                <th class="matrix-th-util">95%</th>
+              </tr>
+            </thead>
+            <tbody id="sensitivityTableBody">
+              <!-- Dynamically generated in app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="matrix-note-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; margin-bottom: 0.75rem; font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">
+          <span>Top: EBITDA · Bottom: Revenue</span>
+          <span>* Base utilization</span>
+        </div>
+
+        <div class="sensitivity-legend" style="display: flex; gap: 0.85rem; align-items: center; justify-content: flex-start; margin-top: 0.25rem; font-size: 0.75rem; flex-wrap: wrap;">
+          <span style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="width: 12px; height: 12px; background: rgba(16, 185, 129, 0.22); border: 1px solid #047857; border-radius: 2px;"></span>
+            <span id="legendHigh">Strong EBITDA (> $320M)</span>
+          </span>
+          <span style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="width: 12px; height: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid #065f46; border-radius: 2px;"></span>
+            <span id="legendMid">Target EBITDA ($250M - $320M)</span>
+          </span>
+          <span style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="width: 12px; height: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid #b45309; border-radius: 2px;"></span>
+            <span id="legendLow">Marginal EBITDA ($150M - $250M)</span>
+          </span>
+          <span style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="width: 12px; height: 12px; background: rgba(239, 68, 68, 0.18); border: 1px solid #b91c1c; border-radius: 2px;"></span>
+            <span id="legendNeg">Weak / Below Screen (< $150M)</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Material Footer -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Malaysia NVIDIA B300 AI Compute Project</strong> — Colocation Investment Feasibility Model
+      </div>
+      <div>
+        Research Cut-off: October 2026 • Currencies: USD / SGD / MYR (Configurable FX Rates)
+      </div>
+    </div>
+  </footer>
+
+  <!-- ====================================================================
+       CURRENCY & FX CONVERSION SETTINGS MODAL
+       ==================================================================== -->
+  <dialog id="fxSettingsModal" class="material-modal" aria-labelledby="modalFxTitle">
+    <div class="modal-surface">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+              <path d="M12 6v12"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 id="modalFxTitle">Currency & Conversion Rate Settings</h3>
+            <p class="modal-subtitle">Choose active reporting currency and configure USD exchange rates</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="modalFxClose" aria-label="Close dialog">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Select Active Reporting Currency -->
+        <div class="input-group">
+          <label class="input-label">Active Reporting Currency</label>
+          <div class="currency-radio-group">
+            <label class="currency-radio-card" id="cardModalUSD">
+              <input type="radio" name="modalCurrencyRadio" value="USD" checked>
+              <span class="currency-code">USD ($)</span>
+              <span class="currency-name">US Dollar (Default)</span>
+            </label>
+            <label class="currency-radio-card" id="cardModalSGD">
+              <input type="radio" name="modalCurrencyRadio" value="SGD">
+              <span class="currency-code">SGD (S$)</span>
+              <span class="currency-name">Singapore Dollar</span>
+            </label>
+            <label class="currency-radio-card" id="cardModalMYR">
+              <input type="radio" name="modalCurrencyRadio" value="MYR">
+              <span class="currency-code">MYR (RM)</span>
+              <span class="currency-name">Malaysian Ringgit</span>
+            </label>
+          </div>
+          <p class="input-note">Select which currency is displayed across all financial dashboards, tables, and KPI metrics.</p>
+        </div>
+
+        <!-- Conversion Rate Inputs relative to USD -->
+        <div class="fx-rates-grid">
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="modalRateSgd">USD to SGD Rate</label>
+              <span class="input-helper-badge">1 USD = X SGD</span>
+            </div>
+            <div class="number-input-container" style="width: 100%;">
+              <span class="input-prefix">S$</span>
+              <input type="number" id="modalRateSgd" class="form-input has-prefix has-suffix" min="0.5" max="3.0" step="0.005" value="1.3500">
+              <span class="input-suffix">SGD</span>
+            </div>
+            <p class="input-note">Singapore Dollar conversion benchmark (default: 1.3500).</p>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="modalRateMyr">USD to MYR Rate</label>
+              <span class="input-helper-badge">1 USD = X MYR</span>
+            </div>
+            <div class="number-input-container" style="width: 100%;">
+              <span class="input-prefix">RM</span>
+              <input type="number" id="modalRateMyr" class="form-input has-prefix has-suffix" min="1.0" max="10.0" step="0.005" value="4.2500">
+              <span class="input-suffix">MYR</span>
+            </div>
+            <p class="input-note">Bank Negara Malaysia conversion benchmark (default: 4.2500).</p>
+          </div>
+        </div>
+
+        <!-- Live Conversion Preview -->
+        <div class="fx-preview-banner">
+          <span class="preview-title">Live Value Conversion Example</span>
+          <div class="preview-chips">
+            <span class="preview-pill"><strong>$100.00</strong> USD</span>
+            <span class="preview-arrow">➔</span>
+            <span class="preview-pill" id="previewSgd"><strong>S$ 135.00</strong> SGD</span>
+            <span class="preview-arrow">➔</span>
+            <span class="preview-pill" id="previewMyr"><strong>RM 425.00</strong> MYR</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-tonal" id="btnFxResetDefaults">
+          Reset Market Defaults (1.35 / 4.25)
+        </button>
+        <button type="button" class="btn btn-primary" id="btnFxSaveApply">
+          Apply & Close
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Application Logic -->
+  <script src="app.js?v=20261014_v1"></script>
+</body>
+</html>
