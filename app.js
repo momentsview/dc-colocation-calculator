@@ -42,6 +42,7 @@ const BASE_DEFAULTS = {
   taxRate: 24.0,
   discountRate: 12.0,
   refreshCapexYr5: 400.0,
+  terminalResaleProceeds: 0.0,
 
   // Power & Colocation (Engineering Load Model)
   reservedItMw: 16.5,
@@ -356,10 +357,13 @@ function calculateFinancials() {
     baseOpexM: totalYear1OpexM,
     priceErosionPct: p.annualPriceErosion,
     refreshCapexYr5M: p.refreshCapexYr5,
+    terminalResaleProceeds: typeof p.terminalResaleProceeds === 'number' && p.terminalResaleProceeds >= 0 ? p.terminalResaleProceeds : 0.0,
     taxRate: p.taxRate / 100,
     deprecYears: p.debtTerm,
     equityRequiredM,
-    discountRate: p.discountRate / 100
+    discountRate: p.discountRate / 100,
+    coloDepositM: p.coloDeposit,
+    liquidityReserveM: p.liquidityReserve
   });
 
   return {
@@ -438,6 +442,11 @@ function calculate10YearCashflows(inputs) {
   let accumDeprec = 0;
   let accumNetIncome = 0;
 
+  // Independent Direct Cash Roll-Forward State (Opening Cash Yr 0 = $0)
+  let runningCash = 0;
+  let prevAr = 0;
+  let prevAp = 0;
+
   // Prepayment amortization term (e.g. 4 years or debtTerm)
   const prepayAmortYears = Math.min(inputs.debtTerm || 4, 4);
   const annualPrepayAmort = (inputs.effectivePrepayM && prepayAmortYears > 0) ? (inputs.effectivePrepayM / prepayAmortYears) : 0;
@@ -513,6 +522,25 @@ function calculate10YearCashflows(inputs) {
     const ar = (yearRevenue / 365) * 20; // 20 days DSO receivables
     const ap = yearOpex / 12; // 30 days operating trade payables
 
+    // Working Capital Movements (GAAP/IFRS Direct Method)
+    const deltaAr = ar - prevAr;
+    const deltaAp = ap - prevAp;
+    const deltaNwc = deltaAr - deltaAp;
+
+    // Direct Cash Flow Line Items
+    const accrualCfo = yearEbitda - interest - tax;
+    const cashOperatingCfo = accrualCfo - deltaNwc;
+    const netCfi = -(maintCapex + refreshCapex);
+    const netCff = -debtPrincipal;
+    const netCashChange = cashOperatingCfo + netCfi + netCff;
+
+    const openingCash = runningCash;
+    runningCash += netCashChange; // Direct cash roll-forward (no Math.max(0, ...) floor)
+    const closingCash = runningCash;
+
+    prevAr = ar;
+    prevAp = ap;
+
     // Deferred customer prepayment balance
     const deferredPrepay = Math.max(0, (inputs.effectivePrepayM || 0) - (annualPrepayAmort * year));
     const seniorDebt = debtBalance;
@@ -523,14 +551,9 @@ function calculate10YearCashflows(inputs) {
     const totalEquity = contributedEquity + retainedEarnings;
 
     const totalLiabEquity = totalLiabilities + totalEquity;
-    const cashBalance = Math.max(0, totalLiabEquity - netPpe - ar);
-    const totalAssets = cashBalance + netPpe + ar;
+    // Direct balance sheet asset calculation (unplugged)
+    const totalAssets = closingCash + netPpe + ar;
     const balanceDiff = Math.abs(totalAssets - totalLiabEquity);
-
-    // Cash Flow Line Items
-    const netCfo = yearEbitda - interest - tax;
-    const netCfi = -(maintCapex + refreshCapex);
-    const netCff = -debtPrincipal;
 
     yearlyData.push({
       year,
@@ -548,7 +571,7 @@ function calculate10YearCashflows(inputs) {
       debtService: year <= inputs.debtTerm ? inputs.annualDebtServiceM : 0,
       refreshCapex,
       // Balance Sheet
-      cash: cashBalance,
+      cash: closingCash,
       ar,
       grossPpe,
       accumDeprec,
@@ -563,53 +586,180 @@ function calculate10YearCashflows(inputs) {
       totalEquity,
       totalLiabEquity,
       balanceDiff,
-      // Cash Flow Statement
+      // Cash Flow Statement (Direct Roll-Forward)
+      openingCash,
       cfoEbitda: yearEbitda,
       cfoInterest: interest,
       cfoTax: tax,
-      netCfo,
+      accrualCfo,
+      deltaAr,
+      deltaAp,
+      deltaNwc,
+      netCfo: cashOperatingCfo, // Cash Operating CFO
+      cashOperatingCfo,
       maintCapex,
       netCfi,
       debtPrincipal,
       netCff,
+      netCashChange,
       projectFcf,
       equityFcf,
       cumulativeProjectCash
     });
   }
 
-  // Calculate Project IRR and Equity IRR (10-Year Base)
+  // Year-5 GPU Hardware Refresh Funding & Liquidity Assessment
+  const refreshCost = inputs.refreshCapexYr5M || 400.0;
+  const year4Data = yearlyData[3]; // Year 4
+  const year5Data = yearlyData[4]; // Year 5
+
+  const year4ClosingCash = year4Data ? year4Data.cash : 0;
+  // Note: The $8.20M colocation deposit was paid at Year 0 from initial project financing, capitalized in gross PP&E,
+  // and was never part of operating cash. The operational liquidity buffer to maintain is strictly the $25.00M reserve.
+  const restrictedColoDeposit = typeof inputs.coloDepositM === 'number' ? inputs.coloDepositM : 8.20;
+  const restrictedLiquidityReserve = typeof inputs.liquidityReserveM === 'number' ? inputs.liquidityReserveM : 25.00;
+  const liquidityBuffer = restrictedLiquidityReserve; // $25.00M operating buffer
+  const totalRestrictedCash = restrictedLiquidityReserve; // Corrected: $25.00M (excludes Yr-0 deposit)
+
+  // Scenario 1: Reserve Maintained (保留储备金)
+  const availableCashReserveMaintained = year4ClosingCash - liquidityBuffer; // $398.17M
+  const day1GapReserveMaintained = availableCashReserveMaintained - refreshCost; // -$1.83M
+
+  // Scenario 2: Reserve Available (储备金可动用 - Subject to Commercial Confirmation)
+  const availableCashReserveAvailable = year4ClosingCash; // $423.17M
+  const day1SurplusReserveAvailable = availableCashReserveAvailable - refreshCost; // +$23.17M
+
+  // Backwards compatibility aliases
+  const unrestrictedCashDay1 = availableCashReserveMaintained;
+  const day1SurplusGap = day1GapReserveMaintained;
+  const day1SurplusWithReserve = day1SurplusReserveAvailable;
+
+  const year5OperatingCashCfo = year5Data ? year5Data.cashOperatingCfo : 0; // +$173.29M
+  const year5MaintCapex = year5Data ? year5Data.maintCapex : 0; // -$8.66M
+  const year5NetOperatingCash = year5OperatingCashCfo - year5MaintCapex; // +$164.63M
+
+  // Phased milestones across Year 5:
+  const month1OperatingCash = year5OperatingCashCfo / 12; // +$14.44M
+  const month1SurplusGap = day1GapReserveMaintained + month1OperatingCash; // +$12.61M (recovered in ~4 days)
+
+  // Mid-Year (Month 6) phased milestone delivery under Scenario 1:
+  const midYearSurplus = (availableCashReserveMaintained + (0.5 * year5NetOperatingCash)) - refreshCost; // +$80.49M
+
+  // End of Year (Day 365) closing cash:
+  const year5ClosingCash = year5Data ? year5Data.cash : 0; // $187.80M
+  const year5EndingUnrestrictedCash = year5ClosingCash - liquidityBuffer; // $162.80M
+
+  // Funding Status Classification (SUFFICIENT, CONDITIONAL, SHORTFALL, UNDETERMINED)
+  let refreshFundingStatus = 'CONDITIONAL';
+  let refreshStatusLabel = 'CONDITIONAL (Subject to Supplier Milestones & Reserve Availability)';
+  let capitalCallRequired = false;
+
+  if (day1GapReserveMaintained >= 0) {
+    refreshFundingStatus = 'SUFFICIENT';
+    refreshStatusLabel = 'SUFFICIENT (Day-1 Cash Covers Refresh)';
+  } else if (day1SurplusReserveAvailable >= 0 || year5ClosingCash >= liquidityBuffer) {
+    refreshFundingStatus = 'CONDITIONAL';
+    refreshStatusLabel = 'CONDITIONAL (Subject to Supplier Milestones & Reserve Availability)';
+  } else if (year5ClosingCash >= 0) {
+    refreshFundingStatus = 'CONDITIONAL';
+    refreshStatusLabel = 'CONDITIONAL (Requires Reserve Release)';
+  } else {
+    refreshFundingStatus = 'SHORTFALL';
+    refreshStatusLabel = 'SHORTFALL (Liquidity Deficit)';
+    capitalCallRequired = true;
+  }
+
+  const year5RefreshFunding = {
+    refreshCost,
+    year4ClosingCash,
+    restrictedColoDeposit,
+    restrictedLiquidityReserve,
+    liquidityBuffer,
+    totalRestrictedCash,
+    availableCashReserveMaintained,
+    availableCashReserveAvailable,
+    unrestrictedCashDay1,
+    day1SurplusGap,
+    day1GapReserveMaintained,
+    day1SurplusWithReserve,
+    day1SurplusReserveAvailable,
+    month1OperatingCash,
+    month1SurplusGap,
+    midYearSurplus,
+    year5OperatingCashCfo,
+    year5MaintCapex,
+    year5NetOperatingCash,
+    year5ClosingCash,
+    year5EndingUnrestrictedCash,
+    refreshFundingStatus,
+    refreshStatusLabel,
+    capitalCallRequired,
+    reserveAssumption: 'Reserve Availability Subject to Confirmation',
+    managementInterpretation: 'Year-5 GPU Refresh is conditionally self-funded, subject to supplier payment milestones and reserve availability.'
+  };
+
+
+  const terminalProceeds = typeof inputs.terminalResaleProceeds === 'number' && inputs.terminalResaleProceeds >= 0 
+    ? inputs.terminalResaleProceeds 
+    : 0.0;
+
+  // Calculate Project IRR and Equity IRR (Method 1: Cash-Only Return - 10-Year Base)
   const projectIrr = computeIRR(cashflows);
   const equityIrr = computeIRR(equityCashflows);
 
-  // NPV at Discount Rate
+  // Cash-Only NPV at Discount Rate
   let npv = cashflows[0];
   for (let t = 1; t < cashflows.length; t++) {
     npv += cashflows[t] / Math.pow(1 + inputs.discountRate, t);
   }
 
-  // Calculate Horizon-Specific Returns (1-Yr, 3-Yr, 5-Yr, 10-Yr) including residual book value
+  // Calculate Method 2: Asset-Inclusive Returns (10-Year Horizon with User Net Terminal Resale Proceeds)
+  const assetProjectCashflows = [...cashflows];
+  assetProjectCashflows[10] += terminalProceeds;
+  const assetEquityCashflows = [...equityCashflows];
+  assetEquityCashflows[10] += terminalProceeds;
+
+  const assetProjectIrr = computeIRR(assetProjectCashflows);
+  const assetEquityIrr = computeIRR(assetEquityCashflows);
+
+  let assetNpv = assetProjectCashflows[0];
+  for (let t = 1; t <= 10; t++) {
+    assetNpv += assetProjectCashflows[t] / Math.pow(1 + inputs.discountRate, t);
+  }
+
+  // Calculate Horizon-Specific Returns (1-Yr, 3-Yr, 5-Yr, 10-Yr)
   const returnsByHorizon = {};
   [1, 3, 5, 10].forEach(h => {
     const pCf = [...cashflows.slice(0, h + 1)];
     const eCf = [...equityCashflows.slice(0, h + 1)];
-    const terminalVal = (yearlyData[h - 1] && yearlyData[h - 1].netPpe) || 0;
-    pCf[h] += terminalVal;
-    eCf[h] += terminalVal;
 
     let hNpv = cashflows[0];
     for (let t = 1; t <= h; t++) {
-      const val = (t === h) ? cashflows[t] + terminalVal : cashflows[t];
-      hNpv += val / Math.pow(1 + inputs.discountRate, t);
+      hNpv += cashflows[t] / Math.pow(1 + inputs.discountRate, t);
     }
 
     const pIrr = computeIRR(pCf);
     const eIrr = computeIRR(eCf);
-    returnsByHorizon[h] = {
-      projectIrr: pIrr !== null ? pIrr * 100 : null,
-      equityIrr: eIrr !== null ? eIrr * 100 : null,
-      npv: hNpv
-    };
+
+    if (h === 10) {
+      returnsByHorizon[h] = {
+        projectIrr: projectIrr !== null ? projectIrr * 100 : null,
+        equityIrr: equityIrr !== null ? equityIrr * 100 : null,
+        npv,
+        assetProjectIrr: assetProjectIrr !== null ? assetProjectIrr * 100 : null,
+        assetEquityIrr: assetEquityIrr !== null ? assetEquityIrr * 100 : null,
+        assetNpv
+      };
+    } else {
+      returnsByHorizon[h] = {
+        projectIrr: pIrr !== null ? pIrr * 100 : null,
+        equityIrr: eIrr !== null ? eIrr * 100 : null,
+        npv: hNpv,
+        assetProjectIrr: null,
+        assetEquityIrr: null,
+        assetNpv: null
+      };
+    }
   });
 
   // Year 0 Inception Snapshot
@@ -638,9 +788,16 @@ function calculate10YearCashflows(inputs) {
     year0,
     yearlyData,
     returnsByHorizon,
+    year5RefreshFunding,
+    terminalResaleProceeds: terminalProceeds,
+    // Method 1: Cash-Only Returns
     projectIrr: projectIrr !== null ? projectIrr * 100 : null,
     equityIrr: equityIrr !== null ? equityIrr * 100 : null,
     npv,
+    // Method 2: Asset-Inclusive Returns (Including User-Defined Terminal Proceeds)
+    assetProjectIrr: assetProjectIrr !== null ? assetProjectIrr * 100 : null,
+    assetEquityIrr: assetEquityIrr !== null ? assetEquityIrr * 100 : null,
+    assetNpv,
     initialPaybackYear: initialPaybackYear !== null ? initialPaybackYear : null,
     sustainedPaybackYear: sustainedPaybackYear !== null ? sustainedPaybackYear : (cumulativeProjectCash >= 0 ? initialPaybackYear : null)
   };
@@ -797,24 +954,40 @@ function renderApp() {
   document.getElementById('kpiCashBreakeven').textContent = `Cash Break-Even: ${sym}${(calc.cashEbitdaBreakevenPrice * fx).toFixed(2)}`;
 
   const irrVal = calc.tenYearModel.projectIrr;
+  const assetIrrVal = calc.tenYearModel.assetProjectIrr;
+  const npvVal = calc.tenYearModel.npv;
+  const assetNpvVal = calc.tenYearModel.assetNpv;
+  const tvProceeds = calc.tenYearModel.terminalResaleProceeds || 0;
+
   const irrText = irrVal !== null ? `${irrVal.toFixed(1)}%` : 'N/A';
   document.getElementById('kpiIrr').textContent = irrText;
-  
+
+  const kpiIrrAssetEl = document.getElementById('kpiIrrAsset');
+  if (kpiIrrAssetEl) {
+    kpiIrrAssetEl.textContent = assetIrrVal !== null ? `${assetIrrVal.toFixed(1)}%` : 'N/A';
+  }
+
   const statusBadge = document.getElementById('kpiDecisionBadge');
-  if (irrVal >= p.discountRate && calc.annualRevenueM >= 250) {
-    statusBadge.className = 'kpi-tag tag-success';
-    statusBadge.textContent = 'CONDITIONAL GO';
-  } else if (irrVal > 0) {
-    statusBadge.className = 'kpi-tag tag-warning';
-    statusBadge.textContent = 'HIGH RISK / MARGINAL';
-  } else {
-    statusBadge.className = 'kpi-tag tag-danger';
-    statusBadge.textContent = 'NEGATIVE NPV / NO-GO';
+  if (statusBadge) {
+    if (irrVal >= p.discountRate && calc.annualRevenueM >= 250) {
+      statusBadge.className = 'kpi-tag tag-success';
+      statusBadge.textContent = 'CONDITIONAL GO';
+    } else if (irrVal > 0) {
+      statusBadge.className = 'kpi-tag tag-warning';
+      statusBadge.textContent = 'HIGH RISK / MARGINAL';
+    } else {
+      statusBadge.className = 'kpi-tag tag-danger';
+      statusBadge.textContent = 'NEGATIVE NPV / NO-GO';
+    }
   }
 
   const kpiNpvText = document.getElementById('kpiNpvText');
   if (kpiNpvText) {
-    kpiNpvText.textContent = `NPV @ ${p.discountRate.toFixed(1)}%: ${formatCurrency(calc.tenYearModel.npv)}`;
+    if (tvProceeds > 0) {
+      kpiNpvText.textContent = `Cash: ${formatCurrency(npvVal)} | Resale: ${formatCurrency(assetNpvVal)}`;
+    } else {
+      kpiNpvText.textContent = `NPV @ ${p.discountRate.toFixed(1)}%: ${formatCurrency(npvVal)}`;
+    }
   }
 
   // 2. Update Financeability Screen Alert
@@ -1464,10 +1637,31 @@ function renderBalanceSheetStatement(c) {
   const maxDiff = selectedYears.reduce((m, y) => Math.max(m, y.balanceDiff || 0), 0);
   const badge = document.getElementById('balanceSheetBadge');
   if (badge) {
-    badge.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-      Balanced (${sym.trim()}${maxDiff.toFixed(2)}M diff)
-    `;
+    if (maxDiff <= 0.05) {
+      badge.className = 'balance-check-badge';
+      badge.style.background = '';
+      badge.style.color = '';
+      badge.style.borderColor = '';
+      badge.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        Balanced (${sym.trim()}${maxDiff.toFixed(2)}M diff)
+      `;
+    } else {
+      badge.className = 'balance-check-badge';
+      badge.style.background = 'rgba(234, 179, 8, 0.15)';
+      badge.style.color = '#b45309';
+      badge.style.borderColor = 'rgba(234, 179, 8, 0.4)';
+      badge.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        Reconciliation Diff: -${sym.trim()}${maxDiff.toFixed(2)}M (Line 513 Maint Deferred)
+      `;
+    }
+  }
+
+  const noteEl = document.getElementById('balanceSheetModelNote');
+  if (noteEl) {
+    noteEl.innerHTML = `* <strong>Treasury Cash</strong> derived from independent direct cash roll-forward (Opening Cash + CFO + CFI + CFF). 
+      ${maxDiff > 0.05 ? `<br><span style="color: #b45309; font-weight: 600;">Note: Difference (-${sym.trim()}${maxDiff.toFixed(2)}M max) reflects Line 513 maintenance capex accounting policy ($8.0M flat capitalization vs escalating cash spend), intentionally deferred per Owner Decision B.</span>` : ''}`;
   }
 
   // Table Headers
@@ -1514,7 +1708,7 @@ function renderBalanceSheetStatement(c) {
   let bodyHtml = '';
   // 1. ASSETS
   bodyHtml += renderSectionHeader('ASSETS');
-  bodyHtml += renderRow('Cash & Cash Equivalents', 'cash');
+  bodyHtml += renderRow('Treasury Cash (Cash & Equivalents / 公司现金余额)', 'cash');
   bodyHtml += renderRow('Accounts Receivable (Trade)', 'ar');
   bodyHtml += renderRow('Gross Capital Assets (PP&E)', 'grossPpe');
   bodyHtml += renderRow('Less: Accumulated Depreciation', 'accumDeprec', true);
@@ -1572,15 +1766,18 @@ function renderCashFlowStatement(c) {
   }
 
   // Calculate horizon sums
-  const totalEbitda = selectedYears.reduce((sum, y) => sum + y.cfoEbitda, 0);
-  const totalInterest = selectedYears.reduce((sum, y) => sum + y.cfoInterest, 0);
-  const totalTax = selectedYears.reduce((sum, y) => sum + y.cfoTax, 0);
+  const totalEbitda = selectedYears.reduce((sum, y) => sum + (y.cfoEbitda || 0), 0);
+  const totalInterest = selectedYears.reduce((sum, y) => sum + (y.cfoInterest || 0), 0);
+  const totalTax = selectedYears.reduce((sum, y) => sum + (y.cfoTax || 0), 0);
+  const totalAccrualCfo = selectedYears.reduce((sum, y) => sum + (y.accrualCfo || (y.cfoEbitda - y.cfoInterest - y.cfoTax)), 0);
+  const totalDeltaNwc = selectedYears.reduce((sum, y) => sum + (y.deltaNwc || 0), 0);
   const totalNetCfo = selectedYears.reduce((sum, y) => sum + y.netCfo, 0);
   const totalMaintCapex = selectedYears.reduce((sum, y) => sum + y.maintCapex, 0);
   const totalRefreshCapex = selectedYears.reduce((sum, y) => sum + y.refreshCapex, 0);
   const totalNetCfi = selectedYears.reduce((sum, y) => sum + y.netCfi, 0);
   const totalPrincipal = selectedYears.reduce((sum, y) => sum + y.debtPrincipal, 0);
   const totalNetCff = selectedYears.reduce((sum, y) => sum + y.netCff, 0);
+  const totalNetCashChange = selectedYears.reduce((sum, y) => sum + y.netCashChange, 0);
   const totalProjectFcf = selectedYears.reduce((sum, y) => sum + y.projectFcf, 0);
   const totalEquityFcf = selectedYears.reduce((sum, y) => sum + y.equityFcf, 0);
 
@@ -1642,9 +1839,11 @@ function renderCashFlowStatement(c) {
   let bodyHtml = '';
   // 1. CFO
   bodyHtml += renderSectionHeader('OPERATING ACTIVITIES (CFO)');
-  bodyHtml += renderRow('EBITDA (Operating Cash Flow)', 'cfoEbitda', false, false, '', totalEbitda);
+  bodyHtml += renderRow('EBITDA (Operating Cash Generation)', 'cfoEbitda', false, false, '', totalEbitda);
   bodyHtml += renderRow('Senior Debt Interest Paid', 'cfoInterest', true, false, '', totalInterest);
   bodyHtml += renderRow('Corporate Income Tax Paid', 'cfoTax', true, false, '', totalTax);
+  bodyHtml += renderRow('Operating Cash Flow before Working Capital', 'accrualCfo', false, false, '', totalAccrualCfo);
+  bodyHtml += renderRow('Change in Working Capital (ΔAR - ΔAP)', 'deltaNwc', true, false, '', totalDeltaNwc);
   bodyHtml += renderRow('Net Cash from Operations (CFO)', 'netCfo', false, true, 'subtotal-row', totalNetCfo);
 
   // 2. CFI
@@ -1661,7 +1860,7 @@ function renderCashFlowStatement(c) {
   // 4. FREE CASH FLOWS & BALANCES
   bodyHtml += renderSectionHeader('SUMMARY FREE CASH FLOW & BALANCES');
   bodyHtml += renderRow(
-    'Annual Free Cash Flow (Project FCF)', 
+    'Annual Project Free Cash Flow (Unlevered FCF / 项目自由现金流)', 
     'projectFcf', 
     false, 
     true, 
@@ -1669,10 +1868,26 @@ function renderCashFlowStatement(c) {
     totalProjectFcf, 
     'color: #1d4ed8; font-weight: 700;'
   );
-  bodyHtml += renderRow('Levered Cash Flow to Equity', 'equityFcf', false, false, '', totalEquityFcf);
+  bodyHtml += renderRow('Equity Free Cash Flow (Modelled FCFE / 股东自由现金流)*', 'equityFcf', false, false, '', totalEquityFcf);
+  bodyHtml += renderRow('Net Annual Cash Change (年度净现金变动)', 'netCashChange', false, false, '', totalNetCashChange);
   
-  if (viewMode !== 'cumulative' && horizon > 1) {
-    let cumRow = `<tr class="total-row"><td class="pnl-col-sticky"><strong>Cumulative Project Cash</strong></td>`;
+  if (viewMode === 'cumulative') {
+    const lastCum = selectedYears[selectedYears.length - 1].cumulativeProjectCash;
+    const lastCash = selectedYears[selectedYears.length - 1].cash;
+    bodyHtml += `
+      <tr class="total-row">
+        <td class="pnl-col-sticky"><strong>Cumulative Project FCF (累计项目自由现金流)</strong></td>
+        <td class="text-right font-mono font-bold" style="${lastCum >= 0 ? 'color: #047857;' : 'color: #b91c1c;'}">${formatCurrency(lastCum)}</td>
+        <td class="text-right font-mono font-bold" style="${lastCum >= 0 ? 'color: #047857;' : 'color: #b91c1c;'}">${formatCurrency(lastCum / horizon)}/yr</td>
+      </tr>
+      <tr class="subtotal-row" style="background: var(--md-sys-color-surface-container);">
+        <td class="pnl-col-sticky"><strong>Closing Treasury Cash Balance (期末公司现金余额)</strong></td>
+        <td class="text-right font-mono font-bold" style="${lastCash >= 0 ? 'color: #047857;' : 'color: #b91c1c;'}">${formatCurrency(lastCash)}</td>
+        <td class="text-right font-mono" style="color: var(--md-sys-color-on-surface-variant); font-size: 0.75rem;">(Ending Balance)</td>
+      </tr>
+    `;
+  } else if (horizon > 1) {
+    let cumRow = `<tr class="total-row"><td class="pnl-col-sticky"><strong>Cumulative Project FCF (累计项目自由现金流)</strong></td>`;
     selectedYears.forEach(y => {
       const val = y.cumulativeProjectCash;
       const formatted = formatCurrency(val);
@@ -1682,9 +1897,97 @@ function renderCashFlowStatement(c) {
     const lastCum = selectedYears[selectedYears.length - 1].cumulativeProjectCash;
     cumRow += `<td class="text-right font-mono font-bold pnl-total-col" style="${lastCum >= 0 ? 'color: #047857;' : 'color: #b91c1c;'}">${formatCurrency(lastCum)}</td></tr>`;
     bodyHtml += cumRow;
+
+    let cashRow = `<tr class="subtotal-row" style="background: var(--md-sys-color-surface-container);"><td class="pnl-col-sticky"><strong>Closing Treasury Cash Balance (期末公司现金余额)</strong></td>`;
+    selectedYears.forEach(y => {
+      const val = y.cash;
+      const formatted = formatCurrency(val);
+      const color = val >= 0 ? 'color: #047857;' : 'color: #b91c1c;';
+      cashRow += `<td class="text-right font-mono font-bold" style="${color}">${formatted}</td>`;
+    });
+    const lastCash = selectedYears[selectedYears.length - 1].cash;
+    cashRow += `<td class="text-right font-mono font-bold pnl-total-col" style="${lastCash >= 0 ? 'color: #047857;' : 'color: #b91c1c;'}">${formatCurrency(lastCash)}</td></tr>`;
+    bodyHtml += cashRow;
+  } else if (horizon === 1) {
+    bodyHtml += renderRow('Closing Treasury Cash Balance (期末公司现金余额)', 'cash', false, true, 'subtotal-row', null, 'color: #047857;');
   }
 
   tbody.innerHTML = bodyHtml;
+}
+
+// Render Year-5 GPU Hardware Refresh Liquidity & Funding Assessment Card
+function renderYear5RefreshAssessment(c) {
+  const fund = c.tenYearModel?.year5RefreshFunding;
+  if (!fund) return;
+
+  const { sym, rate: fx, code } = getCurrencyInfo();
+  const setElText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  const badge = document.getElementById('badgeRefreshFundingStatus');
+  if (badge) {
+    badge.textContent = fund.refreshFundingStatus;
+    if (fund.refreshFundingStatus === 'SUFFICIENT') {
+      badge.className = 'kpi-tag tag-success';
+      badge.style.background = 'rgba(16, 185, 129, 0.15)';
+      badge.style.color = '#047857';
+      badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+    } else if (fund.refreshFundingStatus === 'CONDITIONAL') {
+      badge.className = 'kpi-tag tag-warning';
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.color = '#b45309';
+      badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+    } else {
+      badge.className = 'kpi-tag tag-danger';
+      badge.style.background = 'rgba(239, 68, 68, 0.15)';
+      badge.style.color = '#b91c1c';
+      badge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    }
+  }
+
+  setElText('refreshCurrencyHint', `${code} (${sym.trim()}M)`);
+  setElText('rfMetricRefreshCost', `${sym}${formatRawNumber(fund.refreshCost * fx, 1)}M`);
+  setElText('rfMetricYear4Cash', `${sym}${formatRawNumber(fund.year4ClosingCash * fx, 1)}M`);
+  setElText('rfMetricRestricted', `${sym}${formatRawNumber(fund.totalRestrictedCash * fx, 1)}M`);
+  setElText('rfMetricUnrestrictedDay1', `${sym}${formatRawNumber(fund.unrestrictedCashDay1 * fx, 1)}M`);
+  setElText('rfMetricYear5Cfo', `+${sym}${formatRawNumber(fund.year5OperatingCashCfo * fx, 1)}M`);
+
+  // Scenario Table
+  setElText('rfScenACash', `${sym}${formatRawNumber(fund.unrestrictedCashDay1 * fx, 1)}M`);
+  const scenAGapEl = document.getElementById('rfScenAGap');
+  if (scenAGapEl) {
+    const val = fund.day1SurplusGap * fx;
+    scenAGapEl.textContent = `${val >= 0 ? '+' : '-'}${sym}${formatRawNumber(Math.abs(val), 1)}M`;
+    scenAGapEl.style.color = val >= 0 ? '#047857' : '#b91c1c';
+  }
+
+  setElText('rfScenBCash', `${sym}${formatRawNumber(fund.year4ClosingCash * fx, 1)}M`);
+  const scenBSurpEl = document.getElementById('rfScenBSurplus');
+  if (scenBSurpEl) {
+    const val = fund.day1SurplusWithReserve * fx;
+    scenBSurpEl.textContent = `${val >= 0 ? '+' : '-'}${sym}${formatRawNumber(Math.abs(val), 1)}M`;
+    scenBSurpEl.style.color = val >= 0 ? '#047857' : '#b91c1c';
+  }
+
+  const grossMidCash = (fund.unrestrictedCashDay1 + (0.5 * fund.year5NetOperatingCash)) * fx;
+  setElText('rfScenCCash', `${sym}${formatRawNumber(grossMidCash, 1)}M`);
+  const scenCSurpEl = document.getElementById('rfScenCSurplus');
+  if (scenCSurpEl) {
+    const val = fund.midYearSurplus * fx;
+    scenCSurpEl.textContent = `${val >= 0 ? '+' : '-'}${sym}${formatRawNumber(Math.abs(val), 1)}M`;
+    scenCSurpEl.style.color = val >= 0 ? '#047857' : '#b91c1c';
+  }
+
+  const grossEndCash = (fund.year4ClosingCash + fund.year5OperatingCashCfo) * fx;
+  setElText('rfScenEndCash', `${sym}${formatRawNumber(grossEndCash, 1)}M`);
+  const scenEndSurpEl = document.getElementById('rfScenEndSurplus');
+  if (scenEndSurpEl) {
+    const val = fund.year5ClosingCash * fx;
+    scenEndSurpEl.textContent = `+${sym}${formatRawNumber(val, 1)}M`;
+    scenEndSurpEl.style.color = val >= 0 ? '#047857' : '#b91c1c';
+  }
 }
 
 // Update Year 1 & Multi-Year P&L Table + Balance Sheet + Cash Flow + Unit Economics
@@ -1696,10 +1999,11 @@ function updatePnLTable(c) {
     if (el) el.textContent = val;
   };
 
-  // Render 3 Core Financial Statements
+  // Render 3 Core Financial Statements & Refresh Assessment
   renderPnLStatement(c);
   renderBalanceSheetStatement(c);
   renderCashFlowStatement(c);
+  renderYear5RefreshAssessment(c);
 
   // Unit Breakdown
   setElText('unitCashOpex', `${sym}${(c.cashOpexPerGpuHour * fx).toFixed(2)} / GPU-hr`);
@@ -1721,21 +2025,55 @@ function updatePnLTable(c) {
   const horizonMetric = c.tenYearModel.returnsByHorizon?.[horizon] || {
     projectIrr: c.tenYearModel.projectIrr,
     equityIrr: c.tenYearModel.equityIrr,
-    npv: c.tenYearModel.npv
+    npv: c.tenYearModel.npv,
+    assetProjectIrr: c.tenYearModel.assetProjectIrr,
+    assetEquityIrr: c.tenYearModel.assetEquityIrr,
+    assetNpv: c.tenYearModel.assetNpv
   };
 
   const projectIrr = horizonMetric.projectIrr;
-  setElText('metricProjectIrr', (projectIrr !== null && !isNaN(projectIrr)) ? `${projectIrr.toFixed(1)}%` : 'N/A');
-
   const equityIrr = horizonMetric.equityIrr;
-  setElText('metricEquityIrr', (equityIrr !== null && !isNaN(equityIrr)) ? `${equityIrr.toFixed(1)}%` : 'N/A');
-
   const npv = horizonMetric.npv;
+
+  const assetProjectIrr = horizonMetric.assetProjectIrr;
+  const assetEquityIrr = horizonMetric.assetEquityIrr;
+  const assetNpv = horizonMetric.assetNpv;
+  const tvProceeds = c.tenYearModel.terminalResaleProceeds || 0;
+
+  // Legacy element bindings for backwards compatibility
+  setElText('metricProjectIrr', (projectIrr !== null && !isNaN(projectIrr)) ? `${projectIrr.toFixed(1)}%` : 'N/A');
+  setElText('metricEquityIrr', (equityIrr !== null && !isNaN(equityIrr)) ? `${equityIrr.toFixed(1)}%` : 'N/A');
   if (npv !== null && !isNaN(npv)) {
     const formattedNpv = formatCurrency(npv);
     setElText('metricNpv', npv >= 0 ? `+${formattedNpv}` : formattedNpv);
   } else {
     setElText('metricNpv', 'N/A');
+  }
+
+  // Method 1: Cash-Only Return Elements
+  setElText('metricProjectIrrCash', (projectIrr !== null && !isNaN(projectIrr)) ? `${projectIrr.toFixed(1)}%` : 'N/A');
+  setElText('metricEquityIrrCash', (equityIrr !== null && !isNaN(equityIrr)) ? `${equityIrr.toFixed(1)}%` : 'N/A');
+  if (npv !== null && !isNaN(npv)) {
+    const formattedNpv = formatCurrency(npv);
+    setElText('metricNpvCash', npv >= 0 ? `+${formattedNpv}` : formattedNpv);
+  } else {
+    setElText('metricNpvCash', 'N/A');
+  }
+
+  // Method 2: Asset-Inclusive Return Elements
+  if (horizon === 10 && assetProjectIrr !== null && !isNaN(assetProjectIrr)) {
+    setElText('metricProjectIrrAsset', `${assetProjectIrr.toFixed(1)}%`);
+    setElText('metricEquityIrrAsset', (assetEquityIrr !== null && !isNaN(assetEquityIrr)) ? `${assetEquityIrr.toFixed(1)}%` : 'N/A');
+    if (assetNpv !== null && !isNaN(assetNpv)) {
+      const formattedAssetNpv = formatCurrency(assetNpv);
+      setElText('metricNpvAsset', assetNpv >= 0 ? `+${formattedAssetNpv}` : formattedAssetNpv);
+    } else {
+      setElText('metricNpvAsset', 'N/A');
+    }
+  } else {
+    setElText('metricProjectIrrAsset', 'N/A (Yr 10 only)');
+    setElText('metricEquityIrrAsset', 'N/A (Yr 10 only)');
+    setElText('metricNpvAsset', 'N/A (Yr 10 only)');
   }
 
   const labelNpvHurdle = document.getElementById('labelNpvHurdle');
@@ -1746,7 +2084,11 @@ function updatePnLTable(c) {
   // Synchronize Tab Context Banner Pill
   const ctxReturnsIrr = document.getElementById('ctxReturnsIrr');
   if (ctxReturnsIrr) {
-    ctxReturnsIrr.textContent = (projectIrr !== null && !isNaN(projectIrr)) ? `${projectIrr.toFixed(1)}%` : 'N/A';
+    if (horizon === 10 && assetProjectIrr !== null && tvProceeds > 0) {
+      ctxReturnsIrr.textContent = `${projectIrr.toFixed(1)}% (Cash) | ${assetProjectIrr.toFixed(1)}% (Asset)`;
+    } else {
+      ctxReturnsIrr.textContent = (projectIrr !== null && !isNaN(projectIrr)) ? `${projectIrr.toFixed(1)}%` : 'N/A';
+    }
   }
 
   const pInitial = c.tenYearModel.initialPaybackYear;
@@ -1763,6 +2105,16 @@ function updatePnLTable(c) {
   };
   updateDiscountInput('inputDiscountRate');
   updateDiscountInput('inputDiscountRateTab4');
+
+  const updateResaleInput = (id) => {
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) {
+      el.value = (state.params.terminalResaleProceeds || 0).toString();
+    }
+  };
+  updateResaleInput('inputTerminalResale');
+  updateResaleInput('sliderTerminalResale');
+  updateResaleInput('inputTerminalResaleTab4');
 }
 
 // Sensitivity Heatmap Matrix: Price vs Utilization
@@ -2063,6 +2415,7 @@ function setupEventListeners() {
   bindPair('inputGpuPrice', 'sliderGpuPrice', 'gpuPricePerHour', parseFloat);
   bindPair('inputUtil', 'sliderUtil', 'utilizationPct', parseFloat);
   bindPair('inputPriceErosion', 'sliderPriceErosion', 'annualPriceErosion', parseFloat);
+  bindPair('inputTerminalResale', 'sliderTerminalResale', 'terminalResaleProceeds', parseFloat);
   bindPair('inputPue', 'sliderPue', 'pue', parseFloat);
   bindPair('inputColoRate', 'sliderColoRate', 'coloRatePerKwMo', parseFloat);
   bindPair('inputReservedMw', 'sliderReservedMw', 'reservedItMw', parseFloat);
@@ -2185,6 +2538,24 @@ function setupEventListeners() {
   };
   bindDiscountRate('inputDiscountRate');
   bindDiscountRate('inputDiscountRateTab4');
+
+  // Year-10 Terminal Resale Proceeds input (Tab 4)
+  const inputTerminalResaleTab4 = document.getElementById('inputTerminalResaleTab4');
+  if (inputTerminalResaleTab4) {
+    inputTerminalResaleTab4.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        state.params.terminalResaleProceeds = val;
+        const mainInput = document.getElementById('inputTerminalResale');
+        const mainSlider = document.getElementById('sliderTerminalResale');
+        if (mainInput && document.activeElement !== mainInput) mainInput.value = val;
+        if (mainSlider && document.activeElement !== mainSlider) mainSlider.value = val;
+        setCustomScenario();
+        syncAllInputsWithState();
+        renderApp();
+      }
+    });
+  }
 
   // Quick Server Scale micro buttons
   document.querySelectorAll('[data-set-servers]').forEach(btn => {
@@ -2853,6 +3224,7 @@ function syncAllInputsWithState() {
   updatePair('inputGpuPrice', 'sliderGpuPrice', p.gpuPricePerHour);
   updatePair('inputUtil', 'sliderUtil', p.utilizationPct);
   updatePair('inputPriceErosion', 'sliderPriceErosion', p.annualPriceErosion);
+  updatePair('inputTerminalResale', 'sliderTerminalResale', p.terminalResaleProceeds || 0);
   updatePair('inputPue', 'sliderPue', p.pue);
   updatePair('inputColoRate', 'sliderColoRate', p.coloRatePerKwMo);
   updatePair('inputReservedMw', 'sliderReservedMw', p.reservedItMw);
@@ -2915,6 +3287,9 @@ function syncAllInputsWithState() {
   // Discount / Hurdle Rate inputs
   updateVal('inputDiscountRate', p.discountRate);
   updateVal('inputDiscountRateTab4', p.discountRate);
+
+  // Terminal Resale inputs
+  updateVal('inputTerminalResaleTab4', p.terminalResaleProceeds || 0);
 }
 
 function highlightInputs() {

@@ -239,10 +239,13 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
           </div>
         </div>
-        <div class="kpi-value" id="kpiIrr">12.5%</div>
+        <div class="kpi-value" id="kpiIrr">11.4%</div>
+        <div id="kpiIrrAssetContainer" style="font-size: 0.78rem; font-weight: 600; color: #6d28d9; margin-top: -2px; margin-bottom: 4px;">
+          Asset Resale IRR: <span id="kpiIrrAsset">11.4%</span>
+        </div>
         <div class="kpi-subtext">
           <span class="kpi-tag tag-success" id="kpiDecisionBadge">CONDITIONAL GO</span>
-          <span id="kpiNpvText">NPV @ 12%: +$11.5M</span>
+          <span id="kpiNpvText">NPV @ 12%: -$12.2M</span>
         </div>
       </div>
     </section>
@@ -437,6 +440,24 @@
               </div>
             </div>
             <p class="input-note">Base: 10% annual price erosion before Year 5 hardware refresh ($400M).</p>
+          </div>
+
+          <!-- Year-10 Net Asset Resale Proceeds ($M) -->
+          <div class="input-group">
+            <div class="input-label-row">
+              <label class="input-label" for="inputTerminalResale">Year-10 Net Asset Resale Proceeds</label>
+              <span class="input-helper-badge">Terminal Value</span>
+            </div>
+            <div class="input-field-wrap">
+              <div class="slider-container">
+                <input type="range" id="sliderTerminalResale" min="0" max="300" step="5" value="0">
+              </div>
+              <div class="number-input-container">
+                <input type="number" id="inputTerminalResale" class="form-input has-suffix" min="0" max="500" step="5" value="0">
+                <span class="input-suffix">$M</span>
+              </div>
+            </div>
+            <p class="input-note">Conservative default: $0M (Cash-Only). Positive values model salvage / asset recovery at Yr 10 exit (e.g. $169.5M old Net PP&E book value).</p>
           </div>
         </div>
 
@@ -1849,8 +1870,11 @@
           <canvas id="cashflowChart"></canvas>
         </div>
 
-        <p id="cashFlowModelNote" style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem; margin-bottom: 0;">
-          * Unlevered Free Cash Flow (Project FCF) represents operating EBITDA minus corporate taxes and maintenance/refresh capital expenditures.
+        <p id="cashFlowModelNote" style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem; margin-bottom: 0; line-height: 1.45;">
+          * <strong>Project FCF (Unlevered)</strong> represents operating cash flow minus corporate tax, maintenance capex, and Year-5 refresh capex. 
+          <strong>Cumulative Project FCF</strong> tracks net cash returned by operations against initial capital outlay (-$758.8M). 
+          <strong>Treasury Cash</strong> reflects balance sheet liquid reserves including senior debt funding, customer prepayments, and working capital buffers. 
+          <strong>Equity FCF</strong> reflects modeled levered cash generated prior to discretionary dividend distribution decisions.
         </p>
       </div>
 
@@ -1923,40 +1947,189 @@
             </div>
           </div>
 
-          <!-- Right Column: 10-Year Modeled Returns & Payback -->
+          <!-- Right Column: Horizon Modeled Returns & Payback -->
           <div class="returns-summary-panel">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
               <h4 style="font-size: 0.9rem; font-weight: 700; margin: 0;" id="returnsPanelTitle">10-Year Modeled Returns & Payback</h4>
-              <div style="display: flex; align-items: center; gap: 0.45rem;">
-                <label for="inputDiscountRateTab4" style="font-size: 0.72rem; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">Discount / Hurdle Rate:</label>
-                <div class="table-num-input-wrap" style="width: 85px; height: 26px;">
-                  <input type="number" id="inputDiscountRateTab4" class="form-input text-right font-mono font-bold" min="1" max="30" step="0.5" value="12.0">
-                  <span class="input-suffix">%</span>
+              <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <label for="inputDiscountRateTab4" style="font-size: 0.72rem; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">Hurdle Rate:</label>
+                  <div class="table-num-input-wrap" style="width: 80px; height: 26px;">
+                    <input type="number" id="inputDiscountRateTab4" class="form-input text-right font-mono font-bold" min="1" max="30" step="0.5" value="12.0">
+                    <span class="input-suffix">%</span>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <label for="inputTerminalResaleTab4" style="font-size: 0.72rem; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">Yr-10 Asset Resale:</label>
+                  <div class="table-num-input-wrap" style="width: 90px; height: 26px;">
+                    <input type="number" id="inputTerminalResaleTab4" class="form-input text-right font-mono font-bold" min="0" max="500" step="5" value="0">
+                    <span class="input-suffix">$M</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Project IRR (Unlevered)</div>
-                <div style="font-size: 1.25rem; font-weight: 700;" id="metricProjectIrr">12.5%</div>
+
+            <!-- Side-by-Side Returns Comparison Table -->
+            <div class="table-responsive" style="margin-bottom: 0.75rem;">
+              <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                <thead>
+                  <tr style="border-bottom: 1.5px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface-container);">
+                    <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">Return Metric</th>
+                    <th style="padding: 6px 8px; text-align: right; font-weight: 700; color: var(--md-sys-color-primary); min-width: 110px;">Method 1: Cash-Only (纯现金回报)</th>
+                    <th style="padding: 6px 8px; text-align: right; font-weight: 700; color: #7c3aed; min-width: 125px;">Method 2: Asset-Inclusive (含资产残值回报)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 6px 8px;"><strong>Project IRR (Unlevered / 无杠杆项目IRR)</strong></td>
+                    <td style="padding: 6px 8px; text-align: right; font-family: var(--font-family-mono); font-weight: 700;" id="metricProjectIrrCash">11.4%</td>
+                    <td style="padding: 6px 8px; text-align: right; font-family: var(--font-family-mono); font-weight: 700; color: #7c3aed;" id="metricProjectIrrAsset">11.4%</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 6px 8px;"><strong>Equity IRR (Levered / 有杠杆股东IRR)*</strong></td>
+                    <td style="padding: 6px 8px; text-align: right; font-family: var(--font-family-mono); font-weight: 700;" id="metricEquityIrrCash">12.8%</td>
+                    <td style="padding: 6px 8px; text-align: right; font-family: var(--font-family-mono); font-weight: 700; color: #7c3aed;" id="metricEquityIrrAsset">12.8%</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 6px 8px;"><strong id="labelNpvHurdle">NPV @ 12.0% Hurdle (净现值)</strong></td>
+                    <td style="padding: 6px 8px; text-align: right; font-family: var(--font-family-mono); font-weight: 700;" id="metricNpvCash">-$12.2M</td>
+                    <td style="padding: 6px 8px; text-align: right; font-family: var(--font-family-mono); font-weight: 700; color: #7c3aed;" id="metricNpvAsset">-$12.2M</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Payback Period Cards -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;">
+              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.65rem 0.75rem; border-radius: 8px;">
+                <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Initial Capital Payback</div>
+                <div style="font-size: 1.15rem; font-weight: 700; color: var(--md-sys-color-on-surface);" id="metricPaybackInitial">3.3 years</div>
               </div>
-              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Equity IRR (Levered)</div>
-                <div style="font-size: 1.25rem; font-weight: 700;" id="metricEquityIrr">15.6%</div>
-              </div>
-              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);" id="labelNpvHurdle">NPV @ 12.0% Hurdle</div>
-                <div style="font-size: 1.25rem; font-weight: 700;" id="metricNpv">+$11.5M</div>
-              </div>
-              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.75rem; border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant);">Initial Capital Payback</div>
-                <div style="font-size: 1.25rem; font-weight: 700;" id="metricPaybackInitial">3.4 years</div>
+              <div style="background: var(--md-sys-color-surface-container-high); padding: 0.65rem 0.75rem; border-radius: 8px;">
+                <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Sustained Cumulative Payback</div>
+                <div style="font-size: 1.15rem; font-weight: 700; color: var(--md-sys-color-on-surface);" id="metricPaybackSustained">5.8 years</div>
               </div>
             </div>
-            <p style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem;">
-              * Sustained cumulative payback after modeled Year-5 hardware refresh ($400M) is <strong id="metricPaybackSustained">5.7 years</strong>.
+
+            <p style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant); margin: 0; line-height: 1.45;">
+              * Note: <strong>Method 1 (Cash-Only)</strong> assumes $0 terminal residual salvage value. <strong>Method 2 (Asset-Inclusive)</strong> adds user-specified Net Asset Resale Proceeds at Year-10 exit. 
+              When Asset Resale = $0M, Method 1 and Method 2 are mathematically identical. 
+              Equity IRR reflects modeled cash flow to equity before dividend distribution policies. 
+              Sustained payback reflects cumulative project cash breakeven following the Year-5 GPU refresh ($400M).
             </p>
           </div>
+        </div>
+      </div>
+
+      <!-- 5. Year-5 GPU Hardware Refresh Funding & Liquidity Assessment -->
+      <div class="surface-card" style="margin-bottom: 1.5rem;" id="cardYear5RefreshFunding">
+        <div class="card-title-row">
+          <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Year-5 GPU Hardware Refresh Liquidity & Funding Assessment (第五年设备更换资金状况)</span>
+          </h2>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="kpi-tag tag-warning" id="badgeRefreshFundingStatus" style="font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 999px;">CONDITIONAL</span>
+            <span class="card-actions-hint" id="refreshCurrencyHint">USD ($M)</span>
+          </div>
+        </div>
+
+        <p style="font-size: 0.825rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 1.25rem;">
+          Rigorous liquidity analysis of the planned Year-5 GPU hardware platform replacement ($400M), evaluating Year-4 accumulated treasury cash ($423.2M), operating liquidity buffer ($25.0M), and commercial delivery options. Note: $8.20M colocation deposit was funded at Year 0 and is excluded from operating cash.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+          <!-- Metric 1: Refresh CAPEX Requirement -->
+          <div style="background: var(--md-sys-color-surface-container-high); padding: 1rem; border-radius: 10px; border-left: 4px solid var(--md-sys-color-primary);">
+            <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Year-5 Refresh CAPEX</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: var(--md-sys-color-on-surface); font-family: var(--font-family-mono); margin: 0.25rem 0;" id="rfMetricRefreshCost">$400.0M</div>
+            <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">1,024 systems replaced @ $400M</div>
+          </div>
+
+          <!-- Metric 2: Year 4 Closing Cash & Reserves -->
+          <div style="background: var(--md-sys-color-surface-container-high); padding: 1rem; border-radius: 10px; border-left: 4px solid #0891b2;">
+            <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Yr 4 Closing Treasury Cash</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #0891b2; font-family: var(--font-family-mono); margin: 0.25rem 0;" id="rfMetricYear4Cash">$423.2M</div>
+            <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">Direct roll-forward (operating cash; excl. Yr-0 deposit)</div>
+          </div>
+
+          <!-- Metric 3: Day 1 Available Unrestricted Cash -->
+          <div style="background: var(--md-sys-color-surface-container-high); padding: 1rem; border-radius: 10px; border-left: 4px solid #d97706;">
+            <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Available Cash (Buffer Maintained)</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #d97706; font-family: var(--font-family-mono); margin: 0.25rem 0;" id="rfMetricUnrestrictedDay1">$398.2M</div>
+            <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">Excl. <span id="rfMetricRestricted">$25.0M</span> operating buffer</div>
+          </div>
+
+          <!-- Metric 4: Full Year 5 Operating Inflow -->
+          <div style="background: var(--md-sys-color-surface-container-high); padding: 1rem; border-radius: 10px; border-left: 4px solid #059669;">
+            <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Year 5 Operating CFO</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #059669; font-family: var(--font-family-mono); margin: 0.25rem 0;" id="rfMetricYear5Cfo">+$173.3M</div>
+            <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">Operating cash generation (~$14.4M/mo)</div>
+          </div>
+        </div>
+
+        <!-- Detailed Liquidity Timing Scenarios Table -->
+        <div class="table-responsive" style="margin-bottom: 1rem;">
+          <table class="data-table" style="width: 100%; font-size: 0.82rem;">
+            <thead>
+              <tr style="background: var(--md-sys-color-surface-container);">
+                <th style="text-align: left; padding: 8px 10px;">Payment Timing Scenario</th>
+                <th style="text-align: right; padding: 8px 10px;">Gross Available Cash</th>
+                <th style="text-align: right; padding: 8px 10px;">Less: $400M Refresh</th>
+                <th style="text-align: right; padding: 8px 10px;">Net Surplus / (Gap)</th>
+                <th style="text-align: center; padding: 8px 10px;">Liquidity Assessment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 8px 10px;">
+                  <strong>Scenario 1: Day 1 Immediate Wire (Reserve Maintained)</strong>
+                  <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">$400M lump-sum wire due Jan 1, preserving $25.0M operating liquidity buffer</div>
+                </td>
+                <td class="text-right font-mono" id="rfScenACash">$398.2M</td>
+                <td class="text-right font-mono">($400.0M)</td>
+                <td class="text-right font-mono font-bold" style="color: #b91c1c;" id="rfScenAGap">-$1.8M</td>
+                <td class="text-center"><span class="kpi-tag tag-warning" style="font-size: 0.7rem;">Minor Gap (-$1.8M)</span></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px;">
+                  <strong>Scenario 2: Day 1 Wire (Reserve Available)</strong>
+                  <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">$400M wired immediately utilizing total Year-4 cash ($423.2M); Reserve Availability Subject to Confirmation</div>
+                </td>
+                <td class="text-right font-mono" id="rfScenBCash">$423.2M</td>
+                <td class="text-right font-mono">($400.0M)</td>
+                <td class="text-right font-mono font-bold" style="color: #047857;" id="rfScenBSurplus">+$23.2M</td>
+                <td class="text-center"><span class="kpi-tag tag-success" style="font-size: 0.7rem;">Sufficient with Reserve</span></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px;">
+                  <strong>Scenario 3: Phased Milestones / Operational Delivery (Mid-Year)</strong>
+                  <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">50% advance / 50% commissioning delivery incorporating 6 months operating cash (+$82.3M net)</div>
+                </td>
+                <td class="text-right font-mono" id="rfScenCCash">$478.7M</td>
+                <td class="text-right font-mono">($400.0M)</td>
+                <td class="text-right font-mono font-bold" style="color: #047857;" id="rfScenCSurplus">+$80.5M</td>
+                <td class="text-center"><span class="kpi-tag tag-success" style="font-size: 0.7rem;">Conditionally Sufficient</span></td>
+              </tr>
+              <tr style="background: var(--md-sys-color-surface-container-high);">
+                <td style="padding: 8px 10px;">
+                  <strong>Year-5 Closing Treasury Cash Balance (Post-Refresh Ending)</strong>
+                  <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">Ending cash after full $400M refresh, $8.66M maintenance capex, and zero debt payments</div>
+                </td>
+                <td class="text-right font-mono font-bold" id="rfScenEndCash">$596.5M</td>
+                <td class="text-right font-mono font-bold">($408.7M)</td>
+                <td class="text-right font-mono font-bold" style="color: #047857; font-size: 0.95rem;" id="rfScenEndSurplus">+$187.8M</td>
+                <td class="text-center"><span class="kpi-tag tag-success" style="font-size: 0.7rem;">Fully Solvent</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 0.75rem; background: var(--md-sys-color-surface-container); border-radius: 8px; font-size: 0.76rem;">
+          <div><strong>Funding Assessment:</strong> <span style="color: #d97706; font-weight: 700;">Conditionally Self-Funded</span></div>
+          <div><strong>Reserve Status:</strong> <span style="color: #d97706; font-weight: 600;">Reserve Availability Subject to Confirmation</span></div>
+          <div><strong>Shareholder Capital Call:</strong> <span style="color: #047857; font-weight: 700;">$0.00M (None Required)</span></div>
+          <div><strong>Senior Debt Outstanding:</strong> <span style="color: #047857; font-weight: 700;">$0.00M (Fully Repaid Yr 4)</span></div>
         </div>
       </div>
     </div>
